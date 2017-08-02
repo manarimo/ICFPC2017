@@ -9,6 +9,7 @@ pipeline {
         }
         stage ('Run') {
             steps {
+                echo '${env}'
             }
         }
     }
