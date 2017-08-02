@@ -4,17 +4,12 @@ pipeline {
     stages {
         stage ('Build') {
             steps {
-                def commitHash = env.GIT_COMMIT
-                def branch = env.GIT_BRANCH
-                def previous = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT
-                sh './bin/build.sh ${commitHash} ${branch} ${previous}'
+                sh './bin/build.sh ${env.GIT_COMMIT} ${env.GIT_BRANCH} ${env.GIT_PREVIOUS_SUCCESSFUL_COMMIT}'
             }
         }
         stage ('Run') {
             steps {
-                def commitHash = env.GIT_COMMIT
-                def branch = env.GIT_BRANCH
-                sh './bin/run.sh ${commitHash} ${branch}'
+                sh './bin/run.sh ${env.GIT_COMMIT} ${env.GIT_BRANCH}'
             }
         }
     }
