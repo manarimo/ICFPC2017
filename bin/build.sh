@@ -6,3 +6,7 @@ GIT_PREVIOUS_SUCCESSFUL_COMMIT=$3
 
 echo "Building ${GIT_COMMIT} from ${GIT_BRANCH}"
 echo "Last build on this branch: ${GIT_PREVIOUS_SUCCESSFUL_COMMIT}"
+
+sleep 120
+
+echo "Done"
