@@ -32,13 +32,16 @@ def ai_command(commit):
 if __name__ == '__main__':
     print(ROOT_DIR)
     parser = ArgumentParser()
-    parser.add_argument("--ais", type=str, help="comma separated AI commit hashes")
+    parser.add_argument("--ais", type=str, default="", help="comma separated AI commit hashes")
     parser.add_argument("--random-ai-num", type=int, default=0, help="the number of AIs that will be randomly added as participants")
     parser.add_argument("--map", type=Path, default=None, help="map json. if absent, randomly selected from ./map")
 
     args = parser.parse_args()
     map_path = args.map or random.choice(list_map_paths())
-    ai_commits = args.ais.split(',') + random.sample(list_ais(), args.random_ai_num)
+    ai_commits = []
+    if args.ais is not None:
+        ai_commits += args.ais.split(',')
+    ai_commits += random.sample(list_ais(), args.random_ai_num)
     ai_commands = [ai_command(commit) for commit in ai_commits]
     exe(map_path, ai_commands)
 
