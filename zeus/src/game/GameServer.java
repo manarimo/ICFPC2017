@@ -11,8 +11,11 @@ import json.game.Site;
 import json.log.Score;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
+import util.JsonUtil;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,7 +32,7 @@ public class GameServer {
     // siteId of mine -> siteId -> distance
     private final java.util.Map<Integer, java.util.Map<Integer, Integer>> distances;
 
-    public GameServer(final Map map, final List<String> ais) {
+    public GameServer(final Map map, final List<String> ais) throws IOException {
         this.map = map;
         claimedRivers = new HashMap<>();
         for (int i = 0; i < ais.size(); i++) {
@@ -72,7 +75,7 @@ public class GameServer {
             }
         }
         System.err.println("Server initialized.");
-        System.out.println(map);
+        System.out.println(objectMapper.writeValueAsString(map));
     }
 
     public void run() throws IOException {
@@ -81,10 +84,12 @@ public class GameServer {
             final SetupRequest request = new SetupRequest(i, ais.size(), map);
 
             final Process exec = Runtime.getRuntime().exec(ais.get(i));
-            objectMapper.writeValue(exec.getOutputStream(), request);
-            exec.getOutputStream().close();
+            final OutputStream outputStream = exec.getOutputStream();
+            final InputStream inputStream = exec.getInputStream();
+            JsonUtil.write(outputStream, request);
+            outputStream.close();
 
-            final SetupResponse response = objectMapper.readValue(exec.getInputStream(), SetupResponse.class);
+            final SetupResponse response = JsonUtil.read(inputStream, SetupResponse.class);
             states.set(i, response.state);
             System.err.println("OK");
         }
@@ -98,13 +103,23 @@ public class GameServer {
             final GameplayRequest request = new GameplayRequest(new GameplayRequest.Moves(moves), states.get(punterId));
 
             final Process exec = Runtime.getRuntime().exec(ais.get(punterId));
-            objectMapper.writeValue(exec.getOutputStream(), request);
-            exec.getOutputStream().close();
+            final InputStream inputStream = exec.getInputStream();
+            final OutputStream outputStream = exec.getOutputStream();
+            JsonUtil.write(outputStream, request);
+            outputStream.close();
 
-            final GameplayResponse response = objectMapper.readValue(exec.getInputStream(), GameplayResponse.class);
+            try {
+                exec.waitFor();
+                System.err.println(exec.exitValue());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            final GameplayResponse response = JsonUtil.read(inputStream, GameplayResponse.class);
             handle(response.toMove());
-            states.set(i, response.state);
-            System.out.println(response);
+            states.set(punterId, response.state);
+            history.add(response.toMove());
+            System.out.println(objectMapper.writeValueAsString(response));
         }
         score();
     }
@@ -123,7 +138,7 @@ public class GameServer {
         claimedRivers.get(claim.punter).add(river);
     }
 
-    private void score() {
+    private void score() throws IOException {
         final List<Score.AIScore> aiScores = new ArrayList<>();
         for (int i = 0; i < ais.size(); i++) {
             int score = 0;
@@ -148,6 +163,6 @@ public class GameServer {
             }
             aiScores.add(new Score.AIScore(i, score));
         }
-        System.out.println(new Score(aiScores));
+        System.out.println(objectMapper.writeValueAsString(new Score(aiScores)));
     }
 }

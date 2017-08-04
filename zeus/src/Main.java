@@ -31,7 +31,7 @@ public class Main {
         final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES,false);
 
-        final Map map = objectMapper.readValue(new File(args[0]), Map.class);
+        final Map map = objectMapper.readValue(new File(mapFilePath), Map.class);
         final GameServer gameServer = new GameServer(map, ais);
         gameServer.run();
     }
