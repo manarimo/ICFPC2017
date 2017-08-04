@@ -183,9 +183,8 @@ Open3.popen3(ARGV[0]) do |stdin, stdout, stderr|
     obj.state.app_state = stdout.read
     obj.state.map.set_owner(obj.state.my_id, edge_id)
     payload = {
-        move: Move.new(:claim, obj.state.my_id, edge_id).to_hash(obj.state.map),
         state: obj.state.to_hash
-    }
+    }.merge(Move.new(:claim, obj.state.my_id, edge_id).to_hash(obj.state.map))
     print_json(STDOUT, payload)
   elsif json.key?('stop')
   end
