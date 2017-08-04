@@ -2,6 +2,7 @@ import socket
 import json
 import sys
 import argparse
+import subprocess
 from subprocess import Popen, PIPE
 
 HOST = "punter.inf.ed.ac.uk"
@@ -68,6 +69,17 @@ def decode_json(bytes):
 def execute_command(command, obj):
     command = ["bin/sandstar.rb"] + command
     process = Popen(command, stdout=PIPE, stdin=PIPE)
+    buffer = ""
+    colon_index = -1
+    while True:
+        buffer = buffer + process.stdout.read(1).decode("utf-8")
+        colon_index = buffer.find(":")
+        if colon_index != -1:
+            msg_length = int(buffer[:colon_index])
+            if len(buffer) - colon_index - 1 == msg_length:
+                break
+    handshake = json.loads(buffer[colon_index + 1:])
+    process.stdin.write(encode_json({"you": handshake["me"]}))
     return process.communicate(input=encode_json(obj))[0]
 
 if __name__ == "__main__":
