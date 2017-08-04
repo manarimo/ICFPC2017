@@ -7,8 +7,13 @@ import subprocess
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent.parent
 
 
+def valid_ai(ai_dir):
+    punter_path = Path(ai_dir / "punter")
+    return punter_path.exists()
+
+
 def list_ais():
-    return [d.name for d in Path("/var/ai/").iterdir() if d.is_dir()]
+    return [d.name for d in Path("/var/ai/").iterdir() if d.is_dir() and valid_ai(d)]
 
 
 def list_map_paths():
