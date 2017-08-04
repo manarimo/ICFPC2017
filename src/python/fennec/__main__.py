@@ -33,7 +33,7 @@ def exe(map_path: Path, ai_commands):
     out = subprocess.check_output(cmd)
     LOG_DIR.mkdir()
     log_path = Path(LOG_DIR / "{}.json".format(int(time.time() * 10 ** 6)))
-    with log_path.open("w") as f:
+    with log_path.open("wb") as f:
         f.write(out)
 
 
