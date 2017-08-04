@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 import random
 import subprocess
+import itertools
 
 
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent.parent
@@ -34,14 +35,28 @@ def ai_command(commit):
     return "{} {}".format(str(runner), commit)
 
 
-if __name__ == '__main__':
+def main_all():
+    print("ais:", list_ais())
+    print("maps", list_map_paths())
+    for ais in itertools.combinations(list_ais(), 2):
+        for map_path in list_map_paths():
+            ai_commands = [ai_command(commit) for commit in ais]
+            exe(map_path, ai_commands)
+
+
+def main():
     print(ROOT_DIR)
     parser = ArgumentParser()
+    parser.add_argument("--do-all", action="store_true")
     parser.add_argument("--ais", type=str, help="comma separated AI commit hashes")
     parser.add_argument("--random-ai-num", type=int, default=0, help="the number of AIs that will be randomly added as participants")
     parser.add_argument("--map", type=str, default=None, help="map json. if absent, randomly selected from ./map")
 
     args = parser.parse_args()
+    if args.do_all:
+        main_all()
+        return
+
     if args.map == "random" or args.map is None:
         map_path = random.choice(list_map_paths())
     else:
@@ -53,3 +68,6 @@ if __name__ == '__main__':
     ai_commands = [ai_command(commit) for commit in ai_commits]
     exe(map_path, ai_commands)
 
+
+if __name__ == '__main__':
+    main()
