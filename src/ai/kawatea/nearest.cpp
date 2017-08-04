@@ -39,7 +39,7 @@ void input() {
         
         scanf("%d", &x);
         
-        mines[i] = 1;
+        mines[x] = 1;
     }
     
     scanf("%d", &m);

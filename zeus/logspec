@@ -1,10 +1,5 @@
 ログのフォーマット
-Map
-Move_1
-Move_2
-...
-Move_R
-Score
-
-Score := {"scores": [AIScore]}
-AIScore := {"punter": p, "score": i32}
+{ "map": Map
+, "moves": [Move]
+, "scores": [Score]
+}

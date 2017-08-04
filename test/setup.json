@@ -1,0 +1,32 @@
+17:{"you":"kawatea"}
+346:{
+  "punter": 0,
+  "punters": 2,
+  "map": {
+    "sites": [
+      {
+        "id": 0
+      },
+      {
+        "id": 1
+      },
+      {
+        "id": 2
+      }
+    ],
+    "rivers": [
+      {
+        "source": 0,
+        "target": 1
+      },
+      {
+        "source": 1,
+        "target": 2
+      }
+    ],
+    "mines": [
+      0,
+      1
+    ]
+  }
+}

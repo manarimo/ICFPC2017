@@ -1,4 +1,4 @@
-<project name="zeus" default="compile" basedir=".">
+<project xmlns:ivy="antlib:org.apache.ivy.ant" name="zeus" default="compile" basedir=".">
     <description>
         simple example build file
     </description>
@@ -11,12 +11,17 @@
         <fileset dir="${lib}" includes="**/*.jar"/>
     </path>
 
-    <target name="compile">
+    <target name="resolve">
+        <ivy:retrieve />
+    </target>
+
+    <target name="compile" depends="resolve">
         <mkdir dir="${build}" />
         <javac srcdir="${src}" destdir="${build}" classpathref="classpath" includeantruntime="false"/>
     </target>
 
     <target name="clean">
         <delete dir="${build}"/>
+        <delete dir="${lib}"/>
     </target>
 </project>

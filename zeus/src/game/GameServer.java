@@ -1,18 +1,16 @@
 package game;
 
-import json.comm.GameplayRequest;
-import json.comm.GameplayResponse;
-import json.comm.SetupRequest;
-import json.comm.SetupResponse;
+import json.comm.*;
 import json.game.Map;
-import json.game.Move;
-import json.game.River;
-import json.game.Site;
-import json.log.Score;
+import json.game.*;
+import json.log.Scores;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
+import util.JsonUtil;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -29,7 +27,7 @@ public class GameServer {
     // siteId of mine -> siteId -> distance
     private final java.util.Map<Integer, java.util.Map<Integer, Integer>> distances;
 
-    public GameServer(final Map map, final List<String> ais) {
+    public GameServer(final Map map, final List<String> ais) throws IOException {
         this.map = map;
         claimedRivers = new HashMap<>();
         for (int i = 0; i < ais.size(); i++) {
@@ -72,21 +70,32 @@ public class GameServer {
             }
         }
         System.err.println("Server initialized.");
-        System.out.println(map);
     }
 
     public void run() throws IOException {
         for (int i = 0; i < ais.size(); i++) {
-            System.err.println(String.format("Seting up AI #%d...", i));
+            System.err.println(String.format("Setting up AI #%d...", i));
             final SetupRequest request = new SetupRequest(i, ais.size(), map);
 
             final Process exec = Runtime.getRuntime().exec(ais.get(i));
-            objectMapper.writeValue(exec.getOutputStream(), request);
-            exec.getOutputStream().close();
+            handshake(exec);
+            final OutputStream outputStream = exec.getOutputStream();
+            final InputStream inputStream = exec.getInputStream();
+            JsonUtil.write(outputStream, request);
+            outputStream.close();
 
-            final SetupResponse response = objectMapper.readValue(exec.getInputStream(), SetupResponse.class);
-            states.set(i, response.state);
-            System.err.println("OK");
+            try {
+                final SetupResponse response = JsonUtil.read(inputStream, SetupResponse.class);
+                states.set(i, response.state);
+                System.err.println("OK");
+            } catch (final Exception e) {
+                System.err.println("ERROR");
+                final InputStream errorStream = exec.getErrorStream();
+                final Scanner scanner = new Scanner(errorStream);
+                while (scanner.hasNextLine()) {
+                    System.err.println(scanner.nextLine());
+                }
+            }
         }
         for (int i = 0; i < map.rivers.size(); i++) {
             final int punterId = i % ais.size();
@@ -98,13 +107,27 @@ public class GameServer {
             final GameplayRequest request = new GameplayRequest(new GameplayRequest.Moves(moves), states.get(punterId));
 
             final Process exec = Runtime.getRuntime().exec(ais.get(punterId));
-            objectMapper.writeValue(exec.getOutputStream(), request);
-            exec.getOutputStream().close();
+            handshake(exec);
+            final InputStream inputStream = exec.getInputStream();
+            final OutputStream outputStream = exec.getOutputStream();
+            JsonUtil.write(outputStream, request);
+            outputStream.close();
 
-            final GameplayResponse response = objectMapper.readValue(exec.getInputStream(), GameplayResponse.class);
-            handle(response.toMove());
-            states.set(i, response.state);
-            System.out.println(response);
+
+            try {
+                final GameplayResponse response = JsonUtil.read(inputStream, GameplayResponse.class);
+                handle(response.toMove());
+                states.set(punterId, response.state);
+                history.add(response.toMove());
+                System.err.println("OK");
+            } catch (final Exception e) {
+                System.err.println("ERROR");
+                final InputStream errorStream = exec.getErrorStream();
+                final Scanner scanner = new Scanner(errorStream);
+                while (scanner.hasNextLine()) {
+                    System.err.println(scanner.nextLine());
+                }
+            }
         }
         score();
     }
@@ -123,8 +146,8 @@ public class GameServer {
         claimedRivers.get(claim.punter).add(river);
     }
 
-    private void score() {
-        final List<Score.AIScore> aiScores = new ArrayList<>();
+    private void score() throws IOException {
+        final List<Score> scores = new ArrayList<>();
         for (int i = 0; i < ais.size(); i++) {
             int score = 0;
             for (final Integer mineSiteId : map.mines) {
@@ -146,8 +169,36 @@ public class GameServer {
                     }
                 }
             }
-            aiScores.add(new Score.AIScore(i, score));
+            scores.add(new Score(i, score));
         }
-        System.out.println(new Score(aiScores));
+        for (int i = 0; i < ais.size(); i++) {
+            final ScoreRequest.Stop stop = new ScoreRequest.Stop(history, scores);
+            final ScoreRequest request = new ScoreRequest(stop, states.get(i));
+
+            final Process exec = Runtime.getRuntime().exec(ais.get(i));
+            handshake(exec);
+            final OutputStream outputStream = exec.getOutputStream();
+            JsonUtil.write(outputStream, request);
+            outputStream.close();
+        }
+        System.out.println(objectMapper.writeValueAsString(new Scores(map, history, scores)));
+    }
+
+    private void handshake(final Process exec) throws IOException {
+        final OutputStream outputStream = exec.getOutputStream();
+        final InputStream inputStream = exec.getInputStream();
+
+        try {
+            final HandshakeRequest request = JsonUtil.read(inputStream, HandshakeRequest.class);
+            final HandshakeResponse response = new HandshakeResponse(request.me);
+            JsonUtil.write(outputStream, response);
+        } catch (final Exception e) {
+            System.err.println("ERROR");
+            final InputStream errorStream = exec.getErrorStream();
+            final Scanner scanner = new Scanner(errorStream);
+            while (scanner.hasNextLine()) {
+                System.err.println(scanner.nextLine());
+            }
+        }
     }
 }

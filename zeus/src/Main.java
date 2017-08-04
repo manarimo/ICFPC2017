@@ -23,6 +23,11 @@ public class Main {
             System.err.println("sim [map file] [# players] ai1 ai2 ...");
             return;
         }
+
+        for (int i = 0; i < args.length; i++) {
+            System.err.println(String.format("args[%d] = %s", i, args[i]));
+        }
+
         final List<String> ais = new ArrayList<>();
         for (int i = 0; i < numPlayer; i++) {
             ais.add(args[i+2]);
@@ -31,7 +36,7 @@ public class Main {
         final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES,false);
 
-        final Map map = objectMapper.readValue(new File(args[0]), Map.class);
+        final Map map = objectMapper.readValue(new File(mapFilePath), Map.class);
         final GameServer gameServer = new GameServer(map, ais);
         gameServer.run();
     }
