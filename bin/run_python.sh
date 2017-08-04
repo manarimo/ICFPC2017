@@ -7,6 +7,6 @@ REQUIREMENTS=$PY_BASE/requirements.frozen
 PY_MODULE=$PY_BASE/$1
 shift
 
-pip install -r $REQUIREMENTS
+pip3 install -r $REQUIREMENTS
 
 python3 $PY_MODULE $@
