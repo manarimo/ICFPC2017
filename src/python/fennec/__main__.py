@@ -63,7 +63,7 @@ def main():
     print(ROOT_DIR)
     parser = ArgumentParser()
     parser.add_argument("--do-all", action="store_true")
-    parser.add_argument("--only-tagged", action="store_true", help="effective only if --do-all is given. use only ais with tagged.")
+    parser.add_argument("--only-tagged", action="store_true", help="if --do-all is given. use only ais with tagged. if --do-all is absent, random sampling is done from tagged ones.")
     parser.add_argument("--ais", type=str, help="comma separated AI commit hashes")
     parser.add_argument("--random-ai-num", type=int, default=0, help="the number of AIs that will be randomly added as participants")
     parser.add_argument("--map", type=str, default=None, help="map json. if absent, randomly selected from ./map")
@@ -81,7 +81,8 @@ def main():
     if args.ais is not None:
         ai_commits += args.ais.split(',')
     tags = tag_names()
-    ai_commits += random.sample(list_ais(), args.random_ai_num)
+    to_sample = tags.values() if args.only_tagged else list_ais()
+    ai_commits += random.sample(to_sample, args.random_ai_num)
     ai_commands = [ai_command(tags.get(commit, commit)) for commit in ai_commits]
     for i in range(args.repeat):
         print("match #{}".format(i + 1))
