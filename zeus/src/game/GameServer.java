@@ -108,13 +108,6 @@ public class GameServer {
             JsonUtil.write(outputStream, request);
             outputStream.close();
 
-            try {
-                exec.waitFor();
-                System.err.println(exec.exitValue());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
             final GameplayResponse response = JsonUtil.read(inputStream, GameplayResponse.class);
             handle(response.toMove());
             states.set(punterId, response.state);
