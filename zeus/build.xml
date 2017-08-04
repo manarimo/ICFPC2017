@@ -1,0 +1,27 @@
+<project xmlns:ivy="antlib:org.apache.ivy.ant" name="sim" default="compile" basedir=".">
+    <description>
+        simple example build file
+    </description>
+    <!-- set global properties for this build -->
+    <property name="src" location="src"/>
+    <property name="build" location="build"/>
+    <property name="lib" location="lib"/>
+
+    <path id="classpath">
+        <fileset dir="${lib}" includes="**/*.jar"/>
+    </path>
+
+    <target name="resolve">
+        <ivy:retrieve />
+    </target>
+
+    <target name="compile" depends="resolve">
+        <mkdir dir="${build}" />
+        <javac srcdir="${src}" destdir="${build}" classpathref="classpath" includeantruntime="false"/>
+    </target>
+
+    <target name="clean">
+        <delete dir="${build}"/>
+        <delete dir="${lib}"/>
+    </target>
+</project>

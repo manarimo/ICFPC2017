@@ -1,0 +1,10 @@
+ログのフォーマット
+Map
+Move_1
+Move_2
+...
+Move_R
+Score
+
+Score := {"scores": [AIScore]}
+AIScore := {"punter": p, "score": i32}
