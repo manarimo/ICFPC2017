@@ -83,7 +83,7 @@ public class GameServer {
             System.err.println(String.format("Seting up AI #%d...", i));
             final SetupRequest request = new SetupRequest(i, ais.size(), map);
 
-            final Process exec = Runtime.getRuntime().exec(ais.get(i));
+            final Process exec = Runtime.getRuntime().exec(ais.get(i).split(" "));
             final OutputStream outputStream = exec.getOutputStream();
             final InputStream inputStream = exec.getInputStream();
             JsonUtil.write(outputStream, request);
@@ -111,7 +111,7 @@ public class GameServer {
             }
             final GameplayRequest request = new GameplayRequest(new GameplayRequest.Moves(moves), states.get(punterId));
 
-            final Process exec = Runtime.getRuntime().exec(ais.get(punterId));
+            final Process exec = Runtime.getRuntime().exec(ais.get(punterId).split(" "));
             final InputStream inputStream = exec.getInputStream();
             final OutputStream outputStream = exec.getOutputStream();
             JsonUtil.write(outputStream, request);
