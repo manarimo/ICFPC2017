@@ -32,7 +32,7 @@ def ai_command(commit):
 if __name__ == '__main__':
     print(ROOT_DIR)
     parser = ArgumentParser()
-    parser.add_argument("--ais", type=str, default="", help="comma separated AI commit hashes")
+    parser.add_argument("--ais", type=str, help="comma separated AI commit hashes")
     parser.add_argument("--random-ai-num", type=int, default=0, help="the number of AIs that will be randomly added as participants")
     parser.add_argument("--map", type=Path, default=None, help="map json. if absent, randomly selected from ./map")
 
