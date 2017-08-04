@@ -51,6 +51,7 @@ def main():
     parser.add_argument("--ais", type=str, help="comma separated AI commit hashes")
     parser.add_argument("--random-ai-num", type=int, default=0, help="the number of AIs that will be randomly added as participants")
     parser.add_argument("--map", type=str, default=None, help="map json. if absent, randomly selected from ./map")
+    parser.add_argument("--repeat", type=int, default=1, help="the number of match to do")
 
     args = parser.parse_args()
     if args.do_all:
@@ -66,7 +67,9 @@ def main():
         ai_commits += args.ais.split(',')
     ai_commits += random.sample(list_ais(), args.random_ai_num)
     ai_commands = [ai_command(commit) for commit in ai_commits]
-    exe(map_path, ai_commands)
+    for i in range(args.repeat):
+        print("match #{}".format(i + 1))
+        exe(map_path, ai_commands)
 
 
 if __name__ == '__main__':
