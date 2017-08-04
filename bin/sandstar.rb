@@ -143,6 +143,27 @@ class GamePlay < Struct.new(:moves, :state)
   end
 end
 
+class Reader
+  def initialize(stream)
+    @stream = stream
+    @buf = nil
+  end
+
+  def read_json
+    if @buf.nil?
+      @buf = @stream.read
+    end
+    if m = @buf.match(/^(\d+):/)
+      len = m[1].to_i
+      json_str = m.post_match[0, len]
+      @buf = m.post_match[len...m.post_match.size]
+      JSON.parse(json_str)
+    else
+      raise "Not enough input. Remaining: #{@buf}"
+    end
+  end
+end
+
 def read_json(stdin)
   buf = stdin.read
   m = buf.match(/^(\d+):/)
@@ -160,8 +181,19 @@ def print_json(stdout, obj)
   stdout.puts "#{txt.size}:#{txt}"
 end
 
+reader = Reader.new(STDIN)
 Open3.popen3(ARGV[0]) do |stdin, stdout, stderr|
-  json = read_json(STDIN)
+  stdin.puts 'HANDSHAKE'
+  stdin.close
+  my_name = stdout.read
+  payload = {
+    me: my_name
+  }
+  print_json(STDOUT, payload)
+  reader.read_json
+end
+Open3.popen3(ARGV[0]) do |stdin, stdout, stderr|
+  json = reader.read_json
   if json.key?('punter')
     obj = State.from_json(json)
     stdin.puts 'INIT'
@@ -188,4 +220,5 @@ Open3.popen3(ARGV[0]) do |stdin, stdout, stderr|
     print_json(STDOUT, payload)
   elsif json.key?('stop')
   end
+  STDERR.puts stderr.read
 end
