@@ -8,6 +8,7 @@ import json.game.Map;
 import json.game.Move;
 import json.game.River;
 import json.game.Site;
+import json.log.Score;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 
@@ -71,6 +72,7 @@ public class GameServer {
             }
         }
         System.err.println("Server initialized.");
+        System.out.println(map);
     }
 
     public void run() throws IOException {
@@ -104,6 +106,7 @@ public class GameServer {
             states.set(i, response.state);
             System.out.println(response);
         }
+        score();
     }
 
     private void handle(final Move move) {
@@ -121,6 +124,7 @@ public class GameServer {
     }
 
     private void score() {
+        final List<Score.AIScore> aiScores = new ArrayList<>();
         for (int i = 0; i < ais.size(); i++) {
             int score = 0;
             for (final Integer mineSiteId : map.mines) {
@@ -142,7 +146,8 @@ public class GameServer {
                     }
                 }
             }
-            System.out.println(String.format("AI #%d: score=%d", i, score));
+            aiScores.add(new Score.AIScore(i, score));
         }
+        System.out.println(new Score(aiScores));
     }
 }
