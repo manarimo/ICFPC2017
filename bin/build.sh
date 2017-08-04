@@ -14,7 +14,8 @@ bin/run_python.sh araisan "AIのビルドに成功したのだ！（コミット
 
 AI_DEST=/var/ai/${GIT_COMMIT}/
 mkdir -p ${AI_DEST}
-cp -r . ${AI_DEST} || (bin/run_python.sh araisan "AIの保存に失敗したのだ。。。（コミット:${GIT_COMMIT},ブランチ:${GIT_BRANCH}）" && exit 1)
+
+rsync -a --exclude='.*' . ${AI_DEST} || (bin/run_python.sh araisan "AIの保存に失敗したのだ。。。（コミット:${GIT_COMMIT},ブランチ:${GIT_BRANCH}）" && exit 1)
 
 ls ${AI_DEST}
 echo "AI saved at ${AI_DEST}"
