@@ -220,4 +220,5 @@ Open3.popen3(ARGV[0]) do |stdin, stdout, stderr|
     print_json(STDOUT, payload)
   elsif json.key?('stop')
   end
+  STDERR.puts stderr.read
 end
