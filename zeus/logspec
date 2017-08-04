@@ -1,5 +1,10 @@
 ログのフォーマット
 { "map": Map
-, "moves": [Move]
-, "scores": [Score]
+, "numPunter": i32
+, "history": [State]
+}
+
+State := {
+    "move": Move
+    "score": i32 // moveした後のそのpunterのスコア
 }
