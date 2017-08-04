@@ -89,9 +89,18 @@ public class GameServer {
             JsonUtil.write(outputStream, request);
             outputStream.close();
 
-            final SetupResponse response = JsonUtil.read(inputStream, SetupResponse.class);
-            states.set(i, response.state);
-            System.err.println("OK");
+            try {
+                final SetupResponse response = JsonUtil.read(inputStream, SetupResponse.class);
+                states.set(i, response.state);
+                System.err.println("OK");
+            } catch (final Exception e) {
+                System.err.println("ERROR");
+                final InputStream errorStream = exec.getErrorStream();
+                final Scanner scanner = new Scanner(errorStream);
+                while (scanner.hasNextLine()) {
+                    System.err.println(scanner.nextLine());
+                }
+            }
         }
         for (int i = 0; i < map.rivers.size(); i++) {
             final int punterId = i % ais.size();
@@ -108,11 +117,22 @@ public class GameServer {
             JsonUtil.write(outputStream, request);
             outputStream.close();
 
-            final GameplayResponse response = JsonUtil.read(inputStream, GameplayResponse.class);
-            handle(response.toMove());
-            states.set(punterId, response.state);
-            history.add(response.toMove());
-            System.out.println(objectMapper.writeValueAsString(response));
+
+            try {
+                final GameplayResponse response = JsonUtil.read(inputStream, GameplayResponse.class);
+                handle(response.toMove());
+                states.set(punterId, response.state);
+                history.add(response.toMove());
+                System.out.println(objectMapper.writeValueAsString(response));
+                System.err.println("OK");
+            } catch (final Exception e) {
+                System.err.println("ERROR");
+                final InputStream errorStream = exec.getErrorStream();
+                final Scanner scanner = new Scanner(errorStream);
+                while (scanner.hasNextLine()) {
+                    System.err.println(scanner.nextLine());
+                }
+            }
         }
         score();
     }
