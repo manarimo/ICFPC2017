@@ -20,6 +20,7 @@ def exe(map_path: Path, ai_commands):
     cmd.append(str(map_path.absolute()))
     cmd.append(str(len(ai_commands)))
     cmd += ai_commands
+    print(cmd)
     subprocess.call(cmd)
 
 
