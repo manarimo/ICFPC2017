@@ -37,7 +37,7 @@ if __name__ == '__main__':
     parser.add_argument("--map", type=Path, default=None, help="map json. if absent, randomly selected from ./map")
 
     args = parser.parse_args()
-    map_path = args.map or random.choice(list_map_paths(), 1)
+    map_path = args.map or random.choice(list_map_paths())
     ai_commits = args.ais.split(',') + random.sample(list_ais(), args.random_ai_num)
     ai_commands = [ai_command(commit) for commit in ai_commits]
     exe(map_path, ai_commands)
