@@ -123,7 +123,7 @@ public class GameServer {
                 handle(response.toMove());
                 states.set(punterId, response.state);
                 history.add(response.toMove());
-                System.out.println(objectMapper.writeValueAsString(response));
+                System.out.println(objectMapper.writeValueAsString(response.toMove()));
                 System.err.println("OK");
             } catch (final Exception e) {
                 System.err.println("ERROR");
