@@ -1,14 +1,12 @@
 package game;
 
-import json.comm.GameplayRequest;
-import json.comm.GameplayResponse;
-import json.comm.SetupRequest;
-import json.comm.SetupResponse;
+import json.comm.*;
 import json.game.Map;
 import json.game.Move;
 import json.game.River;
+import json.game.Score;
 import json.game.Site;
-import json.log.Score;
+import json.log.Scores;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
 import util.JsonUtil;
@@ -83,7 +81,8 @@ public class GameServer {
             System.err.println(String.format("Seting up AI #%d...", i));
             final SetupRequest request = new SetupRequest(i, ais.size(), map);
 
-            final Process exec = Runtime.getRuntime().exec(ais.get(i).split(" "));
+            final Process exec = Runtime.getRuntime().exec(ais.get(i));
+            handshake(exec);
             final OutputStream outputStream = exec.getOutputStream();
             final InputStream inputStream = exec.getInputStream();
             JsonUtil.write(outputStream, request);
@@ -111,7 +110,8 @@ public class GameServer {
             }
             final GameplayRequest request = new GameplayRequest(new GameplayRequest.Moves(moves), states.get(punterId));
 
-            final Process exec = Runtime.getRuntime().exec(ais.get(punterId).split(" "));
+            final Process exec = Runtime.getRuntime().exec(ais.get(punterId));
+            handshake(exec);
             final InputStream inputStream = exec.getInputStream();
             final OutputStream outputStream = exec.getOutputStream();
             JsonUtil.write(outputStream, request);
@@ -152,7 +152,7 @@ public class GameServer {
     }
 
     private void score() throws IOException {
-        final List<Score.AIScore> aiScores = new ArrayList<>();
+        final List<Score> scores = new ArrayList<>();
         for (int i = 0; i < ais.size(); i++) {
             int score = 0;
             for (final Integer mineSiteId : map.mines) {
@@ -174,8 +174,36 @@ public class GameServer {
                     }
                 }
             }
-            aiScores.add(new Score.AIScore(i, score));
+            scores.add(new Score(i, score));
         }
-        System.out.println(objectMapper.writeValueAsString(new Score(aiScores)));
+        for (int i = 0; i < ais.size(); i++) {
+            final ScoreRequest.Stop stop = new ScoreRequest.Stop(history, scores);
+            final ScoreRequest request = new ScoreRequest(stop, states.get(i));
+
+            final Process exec = Runtime.getRuntime().exec(ais.get(i));
+            handshake(exec);
+            final OutputStream outputStream = exec.getOutputStream();
+            JsonUtil.write(outputStream, request);
+            outputStream.close();
+        }
+        System.out.println(objectMapper.writeValueAsString(new Scores(scores)));
+    }
+
+    private void handshake(final Process exec) throws IOException {
+        final OutputStream outputStream = exec.getOutputStream();
+        final InputStream inputStream = exec.getInputStream();
+
+        try {
+            final HandshakeRequest request = JsonUtil.read(inputStream, HandshakeRequest.class);
+            final HandshakeResponse response = new HandshakeResponse(request.me);
+            JsonUtil.write(outputStream, response);
+        } catch (final Exception e) {
+            System.err.println("ERROR");
+            final InputStream errorStream = exec.getErrorStream();
+            final Scanner scanner = new Scanner(errorStream);
+            while (scanner.hasNextLine()) {
+                System.err.println(scanner.nextLine());
+            }
+        }
     }
 }
