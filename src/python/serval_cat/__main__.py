@@ -79,8 +79,22 @@ def execute_command(command, obj):
             if len(buffer) - colon_index - 1 == msg_length:
                 break
     handshake = json.loads(buffer[colon_index + 1:])
-    process.stdin.write(encode_json({"you": handshake["me"]}))
-    return process.communicate(input=encode_json(obj))[0]
+    return process.communicate(input=encode_json({"you": handshake["me"]}) + encode_json(obj))[0]
+
+def hit_command(command, obj):
+    command = ["bin/sandstar.rb"] + command
+    process = Popen(command, stdout=PIPE, stdin=PIPE)
+    buffer = ""
+    colon_index = -1
+    while True:
+        buffer = buffer + process.stdout.read(1).decode("utf-8")
+        colon_index = buffer.find(":")
+        if colon_index != -1:
+            msg_length = int(buffer[:colon_index])
+            if len(buffer) - colon_index - 1 == msg_length:
+                break
+    handshake = json.loads(buffer[colon_index + 1:])
+    process.stdin.write(encode_json({"you": handshake["me"]}) + encode_json(obj))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Talk to online server")
@@ -116,7 +130,7 @@ if __name__ == "__main__":
             obj = client.recv_object()
             if "stop" in obj:
                 # Clean up
-                execute_command(command, obj)
+                hit_command(command, obj)
                 print("Game finished!", file = sys.stderr)
                 print(obj["stop"]["scores"], file = sys.stderr)
                 break
