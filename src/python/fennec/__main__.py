@@ -22,7 +22,7 @@ def list_map_paths():
 
 
 def exe(map_path: Path, ai_commands):
-    cmd = ["/var/icfpc/zeus/zeus"]
+    cmd = ["java", "-cp", "/var/icfpc/zeus/build:/var/icfpc/zeus/lib/*", "Main"]
     cmd.append(str(map_path.absolute()))
     cmd.append(str(len(ai_commands)))
     cmd += ai_commands
