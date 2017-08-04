@@ -12,7 +12,7 @@ def list_ais():
 
 
 def list_map_paths():
-    return Path(ROOT_DIR / "map").iterdir()
+    return list(Path(ROOT_DIR / "map").iterdir())
 
 
 def exe(map_path: Path, ai_commands):
