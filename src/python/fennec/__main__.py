@@ -31,7 +31,8 @@ def exe(map_path: Path, ai_commands):
 
 
 def ai_command(commit):
-    return "/var/ai/{}/punter".format(commit)
+    runner = Path(ROOT_DIR / "bin" / "run_ai.sh")
+    return "{} {}".format(str(runner), commit)
 
 
 def main_all():
