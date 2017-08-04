@@ -32,7 +32,7 @@ def exe(map_path: Path, ai_commands):
 
 def ai_command(commit):
     runner = Path(ROOT_DIR / "bin" / "run_ai.sh")
-    return "{} {}".format(str(runner), commit)
+    return "bash {} {}".format(str(runner), commit)
 
 
 def main_all():
