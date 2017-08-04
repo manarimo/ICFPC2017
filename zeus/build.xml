@@ -16,7 +16,8 @@
     </target>
 
     <target name="compile" depends="resolve">
-        <javac srcdir="${src}" destdir="${build}" classpathref="classpath" includeantruntime="true"/>
+        <mkdir dir="${build}" />
+        <javac srcdir="${src}" destdir="${build}" classpathref="classpath" includeantruntime="false"/>
     </target>
 
     <target name="clean">
