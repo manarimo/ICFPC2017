@@ -7,5 +7,5 @@ shift
 AI_DIRECTORY=/var/ai/${GIT_COMMIT}/
 
 cd ${AI_DIRECTORY}
-./run $@
+./punter $@
 
