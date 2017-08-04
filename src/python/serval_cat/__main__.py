@@ -39,30 +39,32 @@ class GameClient():
     
     def recv_message(self):
         while True:
+            colon_index = self.buffer.find(":")
+            if colon_index != -1:
+                msg_length = int(self.buffer[:colon_index])
+                if len(self.buffer) - colon_index - 1 >= msg_length:
+                    result = self.buffer[colon_index + 1:colon_index + 1 + msg_length]
+                    self.buffer = self.buffer[colon_index + 1 + msg_length:]
+                    if self.verbose:
+                        print("[RCVD] {0}".format(result), file = sys.stderr)
+                    return result
             msg = self.client.recv(4096)
             self.buffer += msg.decode("utf-8")
-            colon_index = self.buffer.find(":")
-            if colon_index == -1:
-                continue
-            msg_length = int(self.buffer[:colon_index])
-            if len(self.buffer) - colon_index - 1 >= msg_length:
-                result = self.buffer[colon_index + 1:colon_index + 1 + msg_length]
-                self.buffer = self.buffer[colon_index + 1 + msg_length:]
-                if self.verbose:
-                    print("[RCVD] {0}".format(result), file = sys.stderr)
-                return result
 
 def encode_json(obj):
     string = json.dumps(obj)
-    return "{0}:{1}".format(len(string), string).encode("utf-8")
+    string_with_header = "{0}:{1}".format(len(string), string)
+    print("RAW INPUT: {0}".format(string_with_header), file = sys.stderr)
+    return string_with_header.encode("utf-8")
     
 def decode_json(bytes):
     string = bytes.decode("utf-8")
+    print("RAW OUTPUT: {0}".format(string), file = sys.stderr)
     colon_index = string.find(":")
     return json.loads(string[colon_index + 1:])
 
 def execute_command(command, obj):
-    command = ["bin/sandstar.rb"] + command;
+    command = ["bin/sandstar.rb"] + command
     process = Popen(command, stdout=PIPE, stdin=PIPE)
     return decode_json(process.communicate(input=encode_json(obj))[0])
 
@@ -88,7 +90,6 @@ if __name__ == "__main__":
         while True:
             obj = client.recv_object()
             if "timeout" in obj:
-                execute_command(command, obj)
                 continue
 
             obj["state"] = state
