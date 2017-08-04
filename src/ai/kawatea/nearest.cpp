@@ -183,7 +183,15 @@ void move() {
         }
     }
     
-    // pass
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < graph[i].size(); j++) {
+            if (graph[i][j].owner == -1) {
+                printf("%d\n", graph[i][j].id);
+                printf("%d\n", i);
+                return;
+            }
+        }
+    }
 }
 
 void end() {
