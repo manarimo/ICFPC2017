@@ -7,6 +7,11 @@
 
 using namespace std;
 
+const int create_node_count = 20;    // required count to create a new node
+const int playout_count = 500;        // times of playout
+double C = 1.1;
+
+
 struct Edge {
     int from;
     int to;
@@ -21,7 +26,6 @@ struct Game {
     vector<int> mine;
     int m;
     vector<Edge> edge;
-    vector<vector<pair<int, int>>> graph;
 };
 
 enum Command {
@@ -31,39 +35,38 @@ enum Command {
     END
 };
 
-istream &operator>>(istream &input, Game &g) {
-    input >> g.punter >> g.punter_id >> g.n >> g.mines;
+istream &operator>>(istream &is, Game &g) {
+    is >> g.punter >> g.punter_id >> g.n >> g.mines;
     g.mine.resize(g.mines);
     for (int i = 0; i < g.mines; ++i) {
-        input >> g.mine[i];
+        is >> g.mine[i];
     }
-    input >> g.m;
+    is >> g.m;
     g.edge.resize(g.m);
-    g.graph.resize(g.n);
     for (int i = 0; i < g.m; ++i) {
-        input >> g.edge[i].from >> g.edge[i].to >> g.edge[i].owner;
+        is >> g.edge[i].from >> g.edge[i].to >> g.edge[i].owner;
         auto &e = g.edge[i];
-
-        if (e.owner != -1 || e.owner != g.punter_id) continue;
-        g.graph[e.from].push_back(make_pair(e.to, i));
-        g.graph[e.to].push_back(make_pair(e.from, i));
     }
+    return is;
 }
 
-ostream& operator<<(ostream& os, const Game& g) {
+ostream &operator<<(ostream &os, const Game &g) {
     cout << "game!!!" << endl;
+    return os;
 }
 
 struct State {
     int cur, goal, start;
 };
 
-istream &operator>>(istream &input, State &s) {
-    input >> s.cur >> s.goal >> s.start;
+istream &operator>>(istream &is, State &s) {
+    is >> s.cur >> s.goal >> s.start;
+    return is;
 }
 
-ostream& operator<<(ostream& os, const State &s) {
+ostream &operator<<(ostream &os, const State &s) {
     cout << s.cur << ' ' << s.goal << ' ' << s.start << endl;
+    return os;
 }
 
 struct Result {
@@ -71,13 +74,53 @@ struct Result {
     State state;
 };
 
-const int INF = 1e9;
+const int X = 10007;
+long long hash_edge(const vector<Edge> &edge) {
+    // TODO: too slow
+    const int MOD = static_cast<const int>(1e9 + 7);
+    long long hash = 0;
+    for (int i = 0; i < edge.size(); ++i) {
+        (hash += X * hash + edge[i].owner) %= MOD;
+    }
+    return hash;
+}
 
-vector<int> bfs(Game &game, int v) {
-    int n = game.n;
+inline double calc_ucb(double ex, int ni, int n) {
+    return ex + C * sqrt(2 * log2(n) / ni);
+}
+
+struct UCBchild {
+    double ex;
+    int cnt;
+    UCBchild() : ex(0), cnt(0) {}
+};
+
+struct UCBnode {
+    map<int, UCBchild> ch;
+    double ex;
+    int cnt;
+    UCBnode() : ex(0), cnt(0) {}
+};
+
+map<long long, int> game_freq;
+map<long long, UCBnode> game_to_node;
+
+// get candidate moves
+vector<int> get_candidate(const Game &game) {
+    vector<int> vacant_edge;
+    for (int i = 0; i < game.edge.size(); ++i) {
+        if (game.edge[i].owner == -1) {
+            vacant_edge.push_back(i);
+        }
+    }
+    return vacant_edge;
+}
+
+const int INF = static_cast<const int>(1e9);
+
+vector<int> bfs(const vector<vector<int>> &G, int v) {
+    int n = static_cast<int>(G.size());
     vector<int> dist(n, INF);
-    auto &e = game.edge;
-    auto &G = game.graph;
 
     queue<pair<int, int>> q;
     q.push(make_pair(v, 0));
@@ -86,11 +129,10 @@ vector<int> bfs(Game &game, int v) {
         auto &p = q.front();
         q.pop();
 
-        for (auto &p: G[p.first]) {
-            int v = p.first;
-            if (dist[v] != INF) {
-                dist[v] = p.second + 1;
-                q.emplace(v, p.second);
+        for (auto nv: G[p.first]) {
+            if (dist[nv] == INF) {
+                dist[nv] = p.second + 1;
+                q.emplace(nv, p.second);
             }
         }
     }
@@ -98,42 +140,116 @@ vector<int> bfs(Game &game, int v) {
     return dist;
 }
 
-State init(Game &game) {
-    pair<int, pair<int, int>> max_dist = make_pair(-1, make_pair(0, 0));
-    for (auto &x : game.mine) {
-        auto d = bfs(game, x);
-        auto y = max_element(d.begin(), d.end());
-        max_dist = max(max_dist, make_pair(d[y - d.begin()], make_pair(x, y - d.begin())));
-    }
-
-    auto &p = max_dist.second;
-    return {p.first, p.second};
-}
-
-Result doMove(Game &game, State &state) {
-    auto dist = bfs(game, state.cur);
-    auto dist_from_goal = bfs(game, state.goal);
-    if (dist[state.goal] == INF) {
-        auto &e = game.edge;
-        for (int i = 0; i < e.size(); ++i) {
-            if (e[i].owner == -1) {
-                state.cur = i;
-                return {i, state};
+// get the score of the game
+long long calc_score(const Game &game, const vector<Edge> &edge) {
+    // TODO: too slow
+    long long score = 0;
+    for (auto &mine : game.mine) {
+        vector<vector<int>> org(game.n), res(game.n);
+        for (auto &e : edge) {
+            org[e.from].push_back(e.to);
+            org[e.to].push_back(e.from);
+            if (e.owner == game.punter_id) {
+                res[e.from].push_back(e.to);
+                res[e.to].push_back(e.from);
             }
         }
-    } else if (state.cur != state.goal) {
-        auto &g = game.graph;
-        for (auto &to : g[state.cur]) {
-            if (dist_from_goal[to.first] < dist_from_goal[state.cur]) {
-                state.cur = to.first;
-                return {to.second, state};
+        auto d1 = bfs(org, mine);
+        auto d2 = bfs(res, mine);
+        for (int i = 0; i < game.n; ++i) {
+            if (d2[i] != INF) {
+                score += d1[i] * d1[i];
             }
         }
-    } else {
-        state.cur = state.start;
-        state.goal = max_element(dist_from_goal.begin(), dist_from_goal.end()) - dist_from_goal.begin();
     }
+
+    return score;
 }
+
+long long calc_score(const Game &game) {
+    return calc_score(game, game.edge);
+}
+
+long long random_play(const Game &game, int turn) {
+    auto edge = game.edge;
+    auto cand = get_candidate(game);
+    random_shuffle(cand.begin(), cand.end());
+    for (int e: cand) {
+        edge[e].owner = (game.punter_id + turn++) % game.punter;
+    }
+
+    // score
+    return calc_score(game, edge);
+}
+
+long long uct_search(Game &game, int turn) {
+    // 辿った回数がcreate_node_count回未満ならMC
+    long long hash_value = hash_edge(game.edge);
+    int &cnt = game_freq[hash_value];
+    if (cnt < create_node_count) {
+        ++cnt;
+        long long res = random_play(game, turn);
+        res *= (turn == 0 || turn == game.punter - 1 ? 1 : -1);
+        return res;
+    }
+
+    UCBnode &v = game_to_node[hash_value];
+    int idx = -1;
+    double best = -1;
+
+    // find the best move so far
+    for (auto &e : get_candidate(game)) {
+        if (!v.ch[e].cnt) {
+            idx = e;
+            break;
+        }
+        double ucb = calc_ucb(v.ch[e].ex, v.ch[e].cnt, v.cnt);
+        if (!(turn == 0 || turn == game.punter - 1)) {
+            ucb *= -1;
+            best *= -1;
+        }
+        if (best < ucb) {
+            best = ucb;
+            idx = e;
+        }
+    }
+
+    if (idx < 0) return calc_score(game);
+    game.edge[idx].owner = (game.punter_id + turn) % game.punter;
+    long long res = uct_search(game, (turn + 1) % game.punter);
+    res *= (turn == 0 || turn == game.punter - 1 ? 1 : -1);
+    game.edge[idx].owner = -1;
+
+    // propagate
+    v.ch[idx].ex = ((v.ch[idx].ex * v.ch[idx].cnt) + res) / (v.ch[idx].cnt + 1);
+    ++v.ch[idx].cnt;
+
+    v.ex = ((v.ex * v.cnt) + res) / (v.cnt + 1);
+    ++v.cnt;
+
+    return res;
+}
+
+Result search(Game &game, int playout) {
+    game_to_node.clear();
+    game_freq.clear();
+
+    long long hash = hash_edge(game.edge);
+    UCBnode &root = game_to_node[hash];
+    for (int i = 0; i < playout; ++i) uct_search(game, 0);
+
+    int idx = -1;
+    double best = -1;
+    for (auto &e : get_candidate(game)) {
+        double ucb1 = calc_ucb(root.ch[e].ex, root.ch[e].cnt, root.cnt);
+        if (best >= ucb1) continue;
+        best = ucb1, idx = e;
+    }
+    return Result{idx, {}};
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+
 
 int main() {
     string command;
@@ -151,16 +267,16 @@ int main() {
     Result result;
     switch (state_map.find(command)->second) {
         case HANDSHAKE:
-            cout << "yunter" << endl;
+            cout << "tsurapoyo" << endl;
             break;
         case INIT:
             cin >> game;
-            cout << "hello" << endl;
+            cout << "tsurapoyo~" << endl;
             break;
         case MOVE:
             cin >> game >> state;
-            result = doMove(game, state);
-            cout << result.edge << ' ' << result.state;
+            result = search(game, playout_count);
+            cout << result.edge << '\n' << result.state;
             break;
         case END:
             break;
