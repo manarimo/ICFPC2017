@@ -179,6 +179,7 @@ end
 def print_json(stdout, obj)
   txt = obj.to_json
   stdout.puts "#{txt.size}:#{txt}"
+  stdout.flush
 end
 
 reader = Reader.new(STDIN)
