@@ -97,7 +97,7 @@ END
 
   def to_hash
     {
-        my_id: my_id,
+        punter: my_id,
         punters: punters,
         map: map.to_hash,
         app_state: app_state
