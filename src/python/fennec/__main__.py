@@ -3,9 +3,12 @@ from pathlib import Path
 import random
 import subprocess
 import itertools
+import time
+import shutil
 
 
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent.parent
+LOG_DIR = Path(ROOT_DIR / "logs")
 
 
 def valid_ai(ai_dir):
@@ -27,7 +30,11 @@ def exe(map_path: Path, ai_commands):
     cmd.append(str(len(ai_commands)))
     cmd += ai_commands
     print(cmd)
-    subprocess.call(cmd)
+    out = subprocess.check_output(cmd)
+    LOG_DIR.mkdir()
+    log_path = Path(LOG_DIR / "{}.json".format(int(time.time() * 10 ** 6)))
+    with log_path.open() as f:
+        f.write(out)
 
 
 def ai_command(commit):
@@ -61,9 +68,11 @@ def main_all(args):
 
 def main():
     print(ROOT_DIR)
+    if LOG_DIR.exists():
+        shutil.rmtree(str(LOG_DIR))
     parser = ArgumentParser()
     parser.add_argument("--do-all", action="store_true")
-    parser.add_argument("--only-tagged", action="store_true", help="if --do-all is given. use only ais with tagged. if --do-all is absent, random sampling is done from tagged ones.")
+    parser.add_argument("--only-tagged", action="store_true", help="if --do-all is given. use only ais with tagged. if --do-all is absent, random sampling is done from tagged")
     parser.add_argument("--ais", type=str, help="comma separated AI commit hashes")
     parser.add_argument("--random-ai-num", type=int, default=0, help="the number of AIs that will be randomly added as participants")
     parser.add_argument("--map", type=str, default=None, help="map json. if absent, randomly selected from ./map")
