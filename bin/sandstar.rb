@@ -161,6 +161,16 @@ def print_json(stdout, obj)
 end
 
 Open3.popen3(ARGV[0]) do |stdin, stdout, stderr|
+  stdin.puts 'HANDSHAKE'
+  stdin.close
+  my_name = stdout.read
+  payload = {
+    me: my_name
+  }
+  print_json(STDOUT, payload)
+  read_json(STDIN)
+end
+Open3.popen3(ARGV[0]) do |stdin, stdout, stderr|
   json = read_json(STDIN)
   if json.key?('punter')
     obj = State.from_json(json)
