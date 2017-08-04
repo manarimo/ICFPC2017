@@ -83,15 +83,24 @@ public class GameServer {
             System.err.println(String.format("Seting up AI #%d...", i));
             final SetupRequest request = new SetupRequest(i, ais.size(), map);
 
-            final Process exec = Runtime.getRuntime().exec(ais.get(i));
+            final Process exec = Runtime.getRuntime().exec(ais.get(i).split(" "));
             final OutputStream outputStream = exec.getOutputStream();
             final InputStream inputStream = exec.getInputStream();
             JsonUtil.write(outputStream, request);
             outputStream.close();
 
-            final SetupResponse response = JsonUtil.read(inputStream, SetupResponse.class);
-            states.set(i, response.state);
-            System.err.println("OK");
+            try {
+                final SetupResponse response = JsonUtil.read(inputStream, SetupResponse.class);
+                states.set(i, response.state);
+                System.err.println("OK");
+            } catch (final Exception e) {
+                System.err.println("ERROR");
+                final InputStream errorStream = exec.getErrorStream();
+                final Scanner scanner = new Scanner(errorStream);
+                while (scanner.hasNextLine()) {
+                    System.err.println(scanner.nextLine());
+                }
+            }
         }
         for (int i = 0; i < map.rivers.size(); i++) {
             final int punterId = i % ais.size();
@@ -102,24 +111,28 @@ public class GameServer {
             }
             final GameplayRequest request = new GameplayRequest(new GameplayRequest.Moves(moves), states.get(punterId));
 
-            final Process exec = Runtime.getRuntime().exec(ais.get(punterId));
+            final Process exec = Runtime.getRuntime().exec(ais.get(punterId).split(" "));
             final InputStream inputStream = exec.getInputStream();
             final OutputStream outputStream = exec.getOutputStream();
             JsonUtil.write(outputStream, request);
             outputStream.close();
 
-            try {
-                exec.waitFor();
-                System.err.println(exec.exitValue());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
 
-            final GameplayResponse response = JsonUtil.read(inputStream, GameplayResponse.class);
-            handle(response.toMove());
-            states.set(punterId, response.state);
-            history.add(response.toMove());
-            System.out.println(objectMapper.writeValueAsString(response));
+            try {
+                final GameplayResponse response = JsonUtil.read(inputStream, GameplayResponse.class);
+                handle(response.toMove());
+                states.set(punterId, response.state);
+                history.add(response.toMove());
+                System.out.println(objectMapper.writeValueAsString(response));
+                System.err.println("OK");
+            } catch (final Exception e) {
+                System.err.println("ERROR");
+                final InputStream errorStream = exec.getErrorStream();
+                final Scanner scanner = new Scanner(errorStream);
+                while (scanner.hasNextLine()) {
+                    System.err.println(scanner.nextLine());
+                }
+            }
         }
         score();
     }

@@ -23,6 +23,11 @@ public class Main {
             System.err.println("sim [map file] [# players] ai1 ai2 ...");
             return;
         }
+
+        for (int i = 0; i < args.length; i++) {
+            System.err.println(String.format("args[%d] = %s", i, args[i]));
+        }
+
         final List<String> ais = new ArrayList<>();
         for (int i = 0; i < numPlayer; i++) {
             ais.add(args[i+2]);
