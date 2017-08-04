@@ -1,9 +1,7 @@
 #!/bin/bash
 
-set -e
-
-GIT_COMMIT=$1
-GIT_BRANCH=$2
+GIT_COMMIT=$2
+GIT_BRANCH=$1
 
 echo "Building ${GIT_COMMIT} from ${GIT_BRANCH}"
 
