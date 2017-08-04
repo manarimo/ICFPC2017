@@ -2,10 +2,7 @@ package game;
 
 import json.comm.*;
 import json.game.Map;
-import json.game.Move;
-import json.game.River;
-import json.game.Score;
-import json.game.Site;
+import json.game.*;
 import json.log.Scores;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -73,7 +70,6 @@ public class GameServer {
             }
         }
         System.err.println("Server initialized.");
-        System.out.println(objectMapper.writeValueAsString(map));
     }
 
     public void run() throws IOException {
@@ -123,7 +119,6 @@ public class GameServer {
                 handle(response.toMove());
                 states.set(punterId, response.state);
                 history.add(response.toMove());
-                System.out.println(objectMapper.writeValueAsString(response.toMove()));
                 System.err.println("OK");
             } catch (final Exception e) {
                 System.err.println("ERROR");
@@ -186,7 +181,7 @@ public class GameServer {
             JsonUtil.write(outputStream, request);
             outputStream.close();
         }
-        System.out.println(objectMapper.writeValueAsString(new Scores(scores)));
+        System.out.println(objectMapper.writeValueAsString(new Scores(map, history, scores)));
     }
 
     private void handshake(final Process exec) throws IOException {
