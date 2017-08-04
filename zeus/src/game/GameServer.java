@@ -78,7 +78,7 @@ public class GameServer {
 
     public void run() throws IOException {
         for (int i = 0; i < ais.size(); i++) {
-            System.err.println(String.format("Seting up AI #%d...", i));
+            System.err.println(String.format("Setting up AI #%d...", i));
             final SetupRequest request = new SetupRequest(i, ais.size(), map);
 
             final Process exec = Runtime.getRuntime().exec(ais.get(i));
