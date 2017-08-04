@@ -8,7 +8,7 @@
 using namespace std;
 
 const int create_node_count = 20;    // required count to create a new node
-const int playout_count = 500;        // times of playout
+const int playout_count = 1000;        // times of playout
 double C = 1.1;
 
 
@@ -189,13 +189,12 @@ long long uct_search(Game &game, int turn) {
     if (cnt < create_node_count) {
         ++cnt;
         long long res = random_play(game, turn);
-        res *= (turn == 0 || turn == game.punter - 1 ? 1 : -1);
         return res;
     }
 
     UCBnode &v = game_to_node[hash_value];
     int idx = -1;
-    double best = -1;
+    double best = turn == 0 ? -1 : 1;
 
     // find the best move so far
     for (auto &e : get_candidate(game)) {
@@ -204,11 +203,12 @@ long long uct_search(Game &game, int turn) {
             break;
         }
         double ucb = calc_ucb(v.ch[e].ex, v.ch[e].cnt, v.cnt);
-        if (!(turn == 0 || turn == game.punter - 1)) {
-            ucb *= -1;
-            best *= -1;
-        }
-        if (best < ucb) {
+        if (turn == 0) {
+            if (best < ucb) {
+                best = ucb;
+                idx = e;
+            }
+        } else if (best > ucb) {
             best = ucb;
             idx = e;
         }
@@ -217,7 +217,6 @@ long long uct_search(Game &game, int turn) {
     if (idx < 0) return calc_score(game);
     game.edge[idx].owner = (game.punter_id + turn) % game.punter;
     long long res = uct_search(game, (turn + 1) % game.punter);
-    res *= (turn == 0 || turn == game.punter - 1 ? 1 : -1);
     game.edge[idx].owner = -1;
 
     // propagate
