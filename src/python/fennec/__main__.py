@@ -39,10 +39,13 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--ais", type=str, help="comma separated AI commit hashes")
     parser.add_argument("--random-ai-num", type=int, default=0, help="the number of AIs that will be randomly added as participants")
-    parser.add_argument("--map", type=Path, default=None, help="map json. if absent, randomly selected from ./map")
+    parser.add_argument("--map", type=str, default=None, help="map json. if absent, randomly selected from ./map")
 
     args = parser.parse_args()
-    map_path = args.map or random.choice(list_map_paths())
+    if args.map == "random" or args.map is None:
+        map_path = random.choice(list_map_paths())
+    else:
+        map_path = Path(args.map)
     ai_commits = []
     if args.ais is not None:
         ai_commits += args.ais.split(',')
