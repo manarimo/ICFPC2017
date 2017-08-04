@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# write everything you need to build here.
+
+echo "Done. "
