@@ -62,6 +62,7 @@ def decode_json(bytes):
     return json.loads(string[colon_index + 1:])
 
 def execute_command(command, obj):
+    command = ["bin/sandstar.rb"] + command;
     process = Popen(command, stdout=PIPE, stdin=PIPE)
     return decode_json(process.communicate(input=encode_json(obj))[0])
 
