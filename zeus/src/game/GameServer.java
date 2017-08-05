@@ -1,8 +1,8 @@
 package game;
 
 import json.comm.*;
-import json.game.Map;
 import json.game.*;
+import json.game.Map;
 import json.log.Scores;
 import json.log.State;
 import org.codehaus.jackson.JsonNode;
@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class GameServer {
@@ -99,6 +100,7 @@ public class GameServer {
             final InputStream inputStream = exec.getInputStream();
             JsonUtil.write(outputStream, request);
             outputStream.close();
+            setTimeout(exec, 10);
 
             try {
                 final SetupResponse response = JsonUtil.read(inputStream, SetupResponse.class);
@@ -133,6 +135,7 @@ public class GameServer {
             final OutputStream outputStream = exec.getOutputStream();
             JsonUtil.write(outputStream, request);
             outputStream.close();
+            setTimeout(exec, 1);
 
 
             try {
@@ -271,5 +274,18 @@ public class GameServer {
                 System.err.println(scanner.nextLine());
             }
         }
+    }
+
+    private void setTimeout(final Process exec, final int waitSecond) {
+        new Thread(() -> {
+            try {
+                exec.waitFor(waitSecond, TimeUnit.SECONDS);
+                if (exec.isAlive()) {
+                    System.err.println("Time out!!!");
+                    exec.destroy();
+                }
+            } catch (InterruptedException e) {
+            }
+        }).start();
     }
 }
