@@ -34,7 +34,7 @@ def main():
         if scores[0] > scores[1]:
             kati[(names[0], names[1])] += 1
             per_win_agg[names[0]] += 1
-        elif scores[0] > scores[1]:
+        elif scores[1] > scores[0]:
             kati[(names[1], names[0])] += 1
             per_win_agg[names[1]] += 1
         else:
