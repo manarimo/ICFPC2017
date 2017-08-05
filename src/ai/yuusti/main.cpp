@@ -125,6 +125,12 @@ int get_player_id(int punter_id, int punter, int turn) {
     return (turn + punter_id) % punter;
 }
 
+mt19937 mt = mt19937(static_cast<unsigned int>(1));
+double mt_rand() {
+    static auto rand = bind(uniform_real_distribution<double>(0.0, 100.0), mt);
+    return rand();
+}
+
 // get candidate moves
 vector<int> get_candidate(const Game &game, int turn, bool all = false) {
     vector<int> rest, cand;
@@ -144,8 +150,8 @@ vector<int> get_candidate(const Game &game, int turn, bool all = false) {
         }
     }
     if (all || cand.empty()) return rest;
-    shuffle(rest.begin(), rest.end(), mt_rand);
-    for (int i = 0; i < min(game.edge.size() / 10, static_cast<const int &>(rest.size())); ++i) {
+    shuffle(rest.begin(), rest.end(), mt);
+    for (int i = 0; i < min(game.edge.size() / 10, rest.size()); ++i) {
         cand.push_back(rest[i]);
     }
     return cand;
@@ -203,11 +209,6 @@ long long calc_score(const Game &game, const vector<Edge> &edge, int turn) {
 
 long long calc_score(const Game &game, int turn) {
     return calc_score(game, game.edge, turn);
-}
-
-double mt_rand() {
-    static auto rand = bind(uniform_real_distribution<double>(0.0, 100.0), mt19937(static_cast<unsigned int>(1)));
-    return rand();
 }
 
 vector<long long> random_play(const Game &game, int turn) {
