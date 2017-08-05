@@ -28,7 +28,9 @@ def main():
         with meta_path.open() as f:
             meta_json = json.load(f)
         punter_rank_scores = defaultdict(list)
-        all_names = meta_json["names"]
+        if "tag_names" not in meta_json:
+            continue
+        all_names = meta_json["tag_names"]
         if "scores" not in meta_json:
             continue
         for sc in meta_json["scores"]:
