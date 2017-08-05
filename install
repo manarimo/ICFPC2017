@@ -3,5 +3,6 @@
 # write everything you need to build here.
 
 mkdir -p build
-g++ -o build/kawatea_nearest src/ai/kawatea/nearest.cpp
-g++ -o build/yuusti_mu -std=c++11 -O2 src/ai/yuusti/main.cpp
+# g++ -o build/kawatea_nearest src/ai/kawatea/nearest.cpp
+# g++ -o build/yuusti_mu -std=c++11 -O2 src/ai/yuusti/main.cpp
+g++ -o build/poseidon -std=c++11 -O2 src/ai/mkut/poseidon2.cpp
