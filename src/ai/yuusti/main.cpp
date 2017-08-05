@@ -5,6 +5,7 @@
 #include <queue>
 #include <algorithm>
 #include <cmath>
+#include <functional>
 
 using namespace std;
 
@@ -111,20 +112,34 @@ struct UCBnode {
 map<long long, int> game_freq;
 map<long long, UCBnode> game_to_node;
 
+vector<vector<Edge>> G;
+void buildGraph(const Game &game) {
+    for (int i = 0; i < game.edge.size(); ++i) {
+        G[game.edge[i].from].push_back(game.edge[i]);
+        G[game.edge[i].to].push_back(game.edge[i]);
+    }
+}
+
 // get candidate moves
 vector<int> get_candidate(const Game &game, int turn, bool all = false) {
-    vector<int> vacant_edge, cand;
+    vector<int> rest, cand;
+    vector<int> visited(game.n);
+    for (int i = 0; i < game.edge.size(); ++i) {
+        if (game.edge[i].owner != -1) {
+            visited[game.edge[i].from] = visited[game.edge[i].to] = 1;
+        }
+    }
     for (int i = 0; i < game.edge.size(); ++i) {
         if (game.edge[i].owner == -1) {
-            vacant_edge.push_back(i);
-            if (game.edge[i].owner == (game.punter_id + turn) % game.punter
-                || is_mine[game.edge[i].from] || is_mine[game.edge[i].to]) {
+            rest.push_back(i);
+            if (visited[game.edge[i].from] || visited[game.edge[i].to]
+                    || is_mine[game.edge[i].from] || is_mine[game.edge[i].to]) {
                 cand.push_back(i);
             }
         }
     }
-    if (cand.empty()) return vacant_edge;
-    if (all) cand.insert(cand.end(), vacant_edge.begin(), vacant_edge.end());
+    if (cand.empty()) return rest;
+    if (all) cand.insert(cand.end(), rest.begin(), rest.end());
     return cand;
 }
 
@@ -152,8 +167,12 @@ vector<int> bfs(const vector<vector<int>> &G, int v) {
     return dist;
 }
 
+int get_player_id(int punter_id, int punter, int turn) {
+    return (turn + punter_id) % punter;
+}
+
 // get the score of the game
-long long calc_score(const Game &game, const vector<Edge> &edge) {
+long long calc_score(const Game &game, const vector<Edge> &edge, int turn) {
     // TODO: too slow
     long long score = 0;
     for (auto &mine : game.mine) {
@@ -161,7 +180,7 @@ long long calc_score(const Game &game, const vector<Edge> &edge) {
         for (auto &e : edge) {
             org[e.from].push_back(e.to);
             org[e.to].push_back(e.from);
-            if (e.owner == game.punter_id) {
+            if (e.owner == get_player_id(game.punter_id, game.punter, turn)) {
                 res[e.from].push_back(e.to);
                 res[e.to].push_back(e.from);
             }
@@ -178,20 +197,45 @@ long long calc_score(const Game &game, const vector<Edge> &edge) {
     return score;
 }
 
-long long calc_score(const Game &game) {
-    return calc_score(game, game.edge);
+long long calc_score(const Game &game, int turn) {
+    return calc_score(game, game.edge, turn);
+}
+
+double mt_rand() {
+    static auto rand = bind(uniform_real_distribution<double>(0.0, 100.0), mt19937(static_cast<unsigned int>(0)));
+    return rand();
 }
 
 long long random_play(const Game &game, int turn) {
     auto edge = game.edge;
     auto cand = get_candidate(game, turn);
-    random_shuffle(cand.begin(), cand.end());
-    for (int e: cand) {
-        edge[e].owner = (game.punter_id + turn++) % game.punter;
+    // 隣接辺からランダム
+    priority_queue<pair<double, int>> q;
+
+    vector<int> inqueue(game.n);
+    for (auto e: cand) {
+        inqueue[e] = 1;
+        q.emplace(mt_rand(), e);
+    }
+
+    while (!q.empty()) {
+        auto p = q.top();
+        q.pop();
+
+        edge[p.second].owner = get_player_id(game.punter_id, game.punter, turn++);
+        // TODO: reduce order..
+        for (int i = 0; i < game.edge.size(); ++i) {
+            auto &e = game.edge[i];
+            if (e.owner == -1 && !inqueue[i] && (e.from == p.second || e.to == p.first))  {
+                inqueue[i] = 1;
+                q.emplace(mt_rand(), i);
+            }
+        }
+
     }
 
     // score
-    return calc_score(game, edge);
+    return calc_score(game, edge, turn);
 }
 
 long long uct_search(Game &game, int turn) {
@@ -221,7 +265,7 @@ long long uct_search(Game &game, int turn) {
         }
     }
 
-    if (idx < 0) return calc_score(game);
+    if (idx < 0) return calc_score(game, turn);
     game.edge[idx].owner = (game.punter_id + turn) % game.punter;
     long long res = uct_search(game, (turn + 1) % game.punter);
     game.edge[idx].owner = -1;
