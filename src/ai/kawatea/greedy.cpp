@@ -27,7 +27,7 @@ vector <int> used;
 vector <long long> sum;
 
 void input(bool state) {
-    int num_mine, i;
+    int num_mine, setting, i;
     
     scanf("%d", &punter);
     scanf("%d", &punter_id);
@@ -60,6 +60,14 @@ void input(bool state) {
         
         graph[x].push_back(edge(y, i, z));
         graph[y].push_back(edge(x, i, z));
+    }
+    
+    scanf("%d", &setting);
+    
+    for (int i = 0; i < setting; i++) {
+        char option[10];
+        
+        scanf("%s", option);
     }
     
     if (state) {
