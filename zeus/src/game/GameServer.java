@@ -180,6 +180,7 @@ public class GameServer {
     private void handle(final Move move, final int punterId) throws IOException {
         if (move.claim == null) {
             history.add(Move.of(new Move.Pass(punterId)));
+            return;
         }
         final Move.Claim claim = move.claim;
         River river = claim.toRiver();
