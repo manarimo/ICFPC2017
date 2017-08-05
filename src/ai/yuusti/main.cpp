@@ -5,7 +5,7 @@
 using namespace std;
 
 const int create_node_count = 1;    // required count to create a new node
-const int playout_count = 1000;        // times of playout
+const int playout_count = 10000;        // times of playout
 double C = 1.2;
 
 
@@ -47,6 +47,7 @@ istream &operator>>(istream &is, Game &g) {
         auto &e = g.edge[i];
     }
     return is;
+
 }
 
 ostream &operator<<(ostream &os, const Game &g) {
@@ -162,7 +163,7 @@ vector<int> bfs(const vector<vector<int>> &G, int v) {
         for (auto nv: G[p.first]) {
             if (dist[nv] == INF) {
                 dist[nv] = p.second + 1;
-                q.emplace(nv, p.second);
+                q.emplace(nv, p.second + 1);
             }
         }
     }
@@ -243,7 +244,6 @@ long long random_play(const Game &game, int turn) {
 }
 
 long long uct_search(Game &game, int turn) {
-    // 辿った回数がcreate_node_count回未満ならMC
     long long hash_value = hash_edge(game.edge);
     int &cnt = game_freq[hash_value];
     if (cnt < create_node_count) {
@@ -347,7 +347,7 @@ int main() {
             break;
         case MOVE:
             cin >> game >> settings >> state;
-            result = search(game, playout_count);
+            result = search(game, playout_count / game.edge.size());
             cout << result.edge << '\n' << result.state;
             break;
         case END:
