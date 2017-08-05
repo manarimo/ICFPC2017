@@ -244,7 +244,7 @@ public class GameServer {
         for (int i = 0; i < history.size(); i++) {
             states.add(new State(history.get(i), scores.get(i)));
         }
-        System.out.println(objectMapper.writeValueAsString(new Scores(map, settings, ais.size(), futures, states)));
+        System.out.println(objectMapper.writeValueAsString(new Scores(map, settings, ais.size(), futures, states, pScores)));
     }
 
     private void handshake(final Process exec) throws IOException {

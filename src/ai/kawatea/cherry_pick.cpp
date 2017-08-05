@@ -263,6 +263,7 @@ void connect(int time) {
         int last = q.front();
         q.pop();
         
+        if (used[last] != time && used[last] != 0) output(parent[last]);
         if (used[last] == 0 && mines.is_mine(last)) output(parent[last]);
         
         for (const Edge& edge : graph[last]) {
