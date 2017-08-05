@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
 from collections import Counter
+import elo
 
 
 LOGS_DIR = Path("/var/local/logs/")
@@ -45,11 +46,14 @@ def main():
         per_match_agg[names[0]] += 1
         per_match_agg[names[1]] += 1
     all_names = list(per_match_agg.keys())
-    all_names.sort(key=lambda name: prob(per_win_agg[name], per_match_agg[name], per_draw_agg[name]), reverse=True)
+    win_matrix = [[kati[(winner, loser)] for loser in all_names] for winner in all_names]
+    ratings = list(elo.estimate_rating(win_matrix))
+    name2ratings = {name: rating for name, rating in zip(all_names, ratings)}
+    all_names.sort(key=lambda name: name2ratings[name], reverse=True)
     for name in all_names:
         win, all, draw = per_win_agg[name], per_match_agg[name], per_draw_agg[name]
         nall = all - draw
-        print("{}: {:.5f}% ({} / {}, draw: {})".format(name.strip(), prob(win, all, draw) * 100, win, nall, draw))
+        print("{}: Rating: {}, {:.5f}% ({} / {}, draw: {})".format(name.strip(), name2ratings[name], prob(win, all, draw) * 100, win, nall, draw))
         for opponent in all_names:
             win, lose = kati[(name, opponent)], kati[(opponent, name)]
             nall = win + lose
