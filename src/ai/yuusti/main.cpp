@@ -330,6 +330,7 @@ pair<bool, Result> first_move(Game &game, State &state) {
     priority_queue<long long> q;
     for (int i = 0; i < game.edge.size(); ++i) {
         auto &e = game.edge[i];
+        if (e.owner != -1) continue;
         for (auto &v: game.mine) {
             long long x = min(dist[e.from][v], dist[e.to][v]);
             q.push(x);
