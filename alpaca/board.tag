@@ -40,6 +40,9 @@
 
         keyPress(e) {
             console.log(e);
+            if (e.target.tagName !== 'BODY') {
+                return;
+            }
             if (e.keyCode === 37 || e.key === 'h' || e.key === 'k') {
                 if (this.frame > 0) {
                     --this.frame;
@@ -78,7 +81,7 @@
         }
 
         this.on('mount', () => {
-            window.addEventListener('keydown', this.keyPress);
+            document.addEventListener('keydown', this.keyPress);
         });
 
         this.on('update', () => {
@@ -93,7 +96,7 @@
         });
 
         this.on('unmount', () => {
-            window.removeEventListener('keydown', this.keyPress);
+            document.removeEventListener('keydown', this.keyPress);
         });
 
         this.colors =
