@@ -1,11 +1,6 @@
-#include <iostream>
+#include <bits/stdc++.h>
 #include <vector>
-#include <string>
 #include <map>
-#include <queue>
-#include <algorithm>
-#include <cmath>
-#include <functional>
 
 using namespace std;
 
