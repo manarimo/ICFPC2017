@@ -5,6 +5,7 @@
 , "futures": [[Future]] // punterId -> [Future] 使われてない場合は numPunter 個の空リスト
 , "history": [State]
 , "scores": [Score] // 最終スコア
+, "names": [string]
 }
 
 State := {

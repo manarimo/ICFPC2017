@@ -103,12 +103,63 @@ class State {
     vector<int> mines;
 } state;
 
+class UnionFind {
+    public:
+    UnionFind(int n) : component(n) {
+        parent = (int *)malloc(sizeof(int) * n);
+        for (int i = 0; i < n; i++) parent[i] = -1;
+    }
+    
+    ~UnionFind() {
+        free(parent);
+    }
+    
+    int find(int x) {
+        if (parent[x] < 0) return x;
+        
+        return parent[x] = find(parent[x]);
+    }
+    
+    void unite(int x, int y) {
+        x = find(x);
+        y = find(y);
+        
+        if (x == y) return;
+        
+        component--;
+        
+        if (parent[x] < parent[y]) {
+            parent[x] += parent[y];
+            parent[y] = x;
+        } else {
+            parent[y] += parent[x];
+            parent[x] = y;
+        }
+    }
+    
+    bool same(int x, int y) {
+        return find(x) == find(y);
+    }
+    
+    int size(int x) {
+        return -parent[find(x)];
+    }
+    
+    int count(void) {
+        return component;
+    }
+    
+    private:
+    int component;
+    int *parent;
+};
+
 vector<vector<Edge>> graph;
 vector<int> degree;
 vector<int> used;
 
 void input(bool read_state) {
-    int n, m, mine;
+    int n, m, mine, setting;
     
     scanf("%d", &punter);
     scanf("%d", &punter_id);
@@ -142,6 +193,12 @@ void input(bool read_state) {
         }
     }
     
+    scanf("%d", &setting);
+    for (int i = 0; i < setting; i++) {
+        char option[10];
+        scanf("%s", option);
+    }
+    
     if (read_state) {
         int stage, index;
         scanf("%d %d", &stage, &index);
@@ -152,14 +209,6 @@ void input(bool read_state) {
             int v;
             scanf("%d", &v);
             state.add_mine(v);
-        }
-    } else {
-        int num;
-        scanf("%d", &num);
-        
-        for (int i = 0; i < num; i++) {
-            char option[10];
-            scanf("%s", option);
         }
     }
 }
@@ -179,7 +228,7 @@ void output(int edge_id) {
 }
 
 void handshake() {
-    puts("kawatea-cherry-pick");
+    puts("kawatea-defensive-pick");
 }
 
 void init() {
@@ -218,19 +267,32 @@ void init() {
 }
 
 void cherry_pick() {
-    for (int mine : state.get_mines()) {
-        int best = 0, id = -1;
-        if (used[mine] == 1) continue;
-        
-        for (const Edge& edge: graph[mine]) {
-            if (!edge.is_free()) continue;
-            if (degree[edge.to] > best) {
-                best = degree[edge.to];
-                id = edge.id;
-            }
+    int component = 0;
+    UnionFind uf(graph.size());
+    for (int i = 0; i < graph.size(); i++) {
+        for (const Edge& edge : graph[i]) {
+            if (edge.belongs()) uf.unite(i, edge.to);
         }
-        
-        if (best - 2 >= degree[mine]) output(id);
+    }
+    for (int i = 0; i < graph.size(); i++) {
+        if (uf.find(i) == i && uf.size(i) > 1) component++;
+    }
+    
+    if (component < 3) {
+        for (int mine : state.get_mines()) {
+            int best = 0, id = -1;
+            if (used[mine] == 1) continue;
+            
+            for (const Edge& edge : graph[mine]) {
+                if (!edge.is_free()) continue;
+                if (degree[edge.to] > best) {
+                    best = degree[edge.to];
+                    id = edge.id;
+                }
+            }
+            
+            if (best - 2 >= degree[mine]) output(id);
+        }
     }
     
     state.next_stage();
@@ -356,7 +418,111 @@ void extend(int time) {
     }
 }
 
+vector<vector<int>> all_dist() {
+    int num = 0;
+    vector<vector<int>> dist(mines.get_count(), vector<int>(graph.size()));
+    queue<int> q;
+    
+    for (int mine : mines.get_mines()) {
+        for (int i = 0; i < graph.size(); i++) dist[num][i] = INF;
+        dist[num][mine] = 0;
+        q.push(mine);
+        
+        while (!q.empty()) {
+            int last = q.front();
+            q.pop();
+            
+            for (const Edge& edge : graph[last]) {
+                int next = edge.to;
+                if (dist[num][next] == INF) {
+                    dist[num][next] = dist[num][last] + 1;
+                    q.push(next);
+                }
+            }
+        }
+        
+        num++;
+    }
+    
+    return dist;
+}
+
+vector<long long> score(const vector<vector<int>>& dist, int id) {
+    int num = 0;
+    vector<bool> visited(graph.size());
+    vector<long long> scores(graph.size());
+    queue<int> q;
+    
+    for (int mine : mines.get_mines()) {
+        for (int i = 0; i < graph.size(); i++) visited[i] = false;
+        visited[mine] = true;
+        q.push(mine);
+        
+        while (!q.empty()) {
+            int last = q.front();
+            q.pop();
+            
+            scores[last] += (long long)dist[num][last] * dist[num][last];
+            
+            for (const Edge& edge : graph[last]) {
+                int next = edge.to;
+                if (edge.owner == id && !visited[next]) {
+                    visited[next] = true;
+                    q.push(next);
+                }
+            }
+        }
+        
+        num++;
+    }
+    
+    return scores;
+}
+
 void prevent() {
+    int index;
+    vector<vector<int>> dist = all_dist();
+    vector<vector<long long>> scores;
+    vector<pair<long long, int>> order;
+    
+    for (int i = 0; i < punter; i++) {
+        long long sum = 0;
+        scores.push_back(score(dist, i));
+        for (int j = 0; j < graph.size(); j++) sum += scores.back()[j];
+        order.push_back(make_pair(-sum, i));
+    }
+    sort(order.begin(), order.end());
+    
+    for (int i = 0; ; i++) {
+        if (order[i].second == punter_id) {
+            index = i + 1;
+            break;
+        }
+    }
+    
+    if (index < punter) {
+        int id = -1;
+        long long best = 0;
+        
+        for (int i = 0; i < graph.size(); i++) {
+            for (const Edge& edge: graph[i]) {
+                int from = i, to = edge.to;
+                
+                if (!edge.is_free()) continue;
+                
+                if (scores[index][from] < scores[index][to]) swap(from ,to);
+                if (scores[index][from] > 0 && scores[index][to] == 0) {
+                    if (scores[index][from] > best) {
+                        best = scores[index][from];
+                        id = edge.id;
+                    }
+                }
+            }
+        }
+        
+        if (best > 0) output(id);
+    }
+    
     for (int i = 0; i < graph.size(); i++) {
         for (const Edge& edge : graph[i]) {
             if (edge.is_free()) output(edge.id);

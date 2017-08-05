@@ -1,8 +1,8 @@
 package game;
 
 import json.comm.*;
-import json.game.Map;
 import json.game.*;
+import json.game.Map;
 import json.log.Scores;
 import json.log.State;
 import org.codehaus.jackson.JsonNode;
@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class GameServer {
@@ -27,6 +28,7 @@ public class GameServer {
     private final List<Integer> scores;
     private final Settings settings;
     private final List<List<Future>> futures;
+    private final List<String> names;
 
     // siteId of mine -> siteId -> distance
     private final java.util.Map<Integer, java.util.Map<Integer, Integer>> distances;
@@ -79,6 +81,10 @@ public class GameServer {
         for (int i = 0; i < ais.size(); i++) {
             futures.add(new ArrayList<>());
         }
+        names = new ArrayList<>();
+        for (int i = 0; i < ais.size(); i++) {
+            names.add("noname");
+        }
         System.err.println("Server initialized.");
     }
 
@@ -89,11 +95,12 @@ public class GameServer {
             final SetupRequest request = new SetupRequest(i, ais.size(), map, settings);
 
             final Process exec = Runtime.getRuntime().exec(ais.get(i));
-            handshake(exec);
+            handshake(i, exec);
             final OutputStream outputStream = exec.getOutputStream();
             final InputStream inputStream = exec.getInputStream();
             JsonUtil.write(outputStream, request);
             outputStream.close();
+            setTimeout(exec, 10);
 
             try {
                 final SetupResponse response = JsonUtil.read(inputStream, SetupResponse.class);
@@ -123,21 +130,19 @@ public class GameServer {
             final GameplayRequest request = new GameplayRequest(new GameplayRequest.Moves(moves), states.get(punterId));
 
             final Process exec = Runtime.getRuntime().exec(ais.get(punterId));
-            handshake(exec);
+            handshake(punterId, exec);
             final InputStream inputStream = exec.getInputStream();
             final OutputStream outputStream = exec.getOutputStream();
             JsonUtil.write(outputStream, request);
             outputStream.close();
+            setTimeout(exec, 1);
 
 
+            Move move = Move.of(new Move.Pass(punterId));
             try {
                 final GameplayResponse response = JsonUtil.read(inputStream, GameplayResponse.class);
-                handle(response.toMove(), punterId);
+                move = response.toMove();
                 states.set(punterId, response.state);
-                int score = score(punterId);
-                scores.add(score);
-                System.err.println("OK");
-                System.err.println(punterId + " " + score);
             } catch (final Exception e) {
                 System.err.println("ERROR");
                 final InputStream errorStream = exec.getErrorStream();
@@ -146,6 +151,11 @@ public class GameServer {
                     System.err.println(scanner.nextLine());
                 }
             }
+            handle(move, punterId);
+            int score = score(punterId);
+            scores.add(score);
+            System.err.println("OK");
+            System.err.println(punterId + " " + score);
         }
 
         // 3. Scoring
@@ -167,13 +177,15 @@ public class GameServer {
                 .collect(Collectors.toList());
     }
 
-    private void handle(final Move move, final int punterId) {
+    private void handle(final Move move, final int punterId) throws IOException {
         if (move.claim == null) {
             history.add(Move.of(new Move.Pass(punterId)));
+            return;
         }
         final Move.Claim claim = move.claim;
         River river = claim.toRiver();
         if (!remainingRivers.contains(river)) {
+            System.err.println(objectMapper.writeValueAsString(move));
             history.add(Move.of(new Move.Pass(punterId)));
             //todo warning
             return;
@@ -235,7 +247,7 @@ public class GameServer {
             final ScoreRequest request = new ScoreRequest(stop, states.get(i));
 
             final Process exec = Runtime.getRuntime().exec(ais.get(i));
-            handshake(exec);
+            handshake(i, exec);
             final OutputStream outputStream = exec.getOutputStream();
             JsonUtil.write(outputStream, request);
             outputStream.close();
@@ -245,15 +257,16 @@ public class GameServer {
         for (int i = 0; i < history.size(); i++) {
             states.add(new State(history.get(i), scores.get(i)));
         }
-        System.out.println(objectMapper.writeValueAsString(new Scores(map, settings, ais.size(), futures, states, pScores)));
+        System.out.println(objectMapper.writeValueAsString(new Scores(map, settings, ais.size(), futures, states, pScores, names)));
     }
 
-    private void handshake(final Process exec) throws IOException {
+    private void handshake(final int punterId, final Process exec) throws IOException {
         final OutputStream outputStream = exec.getOutputStream();
         final InputStream inputStream = exec.getInputStream();
 
         try {
             final HandshakeRequest request = JsonUtil.read(inputStream, HandshakeRequest.class);
+            names.set(punterId, request.me);
             final HandshakeResponse response = new HandshakeResponse(request.me);
             JsonUtil.write(outputStream, response);
         } catch (final Exception e) {
@@ -264,5 +277,23 @@ public class GameServer {
                 System.err.println(scanner.nextLine());
             }
         }
+    }
+
+    private void setTimeout(final Process exec, final int waitSecond) {
+        new Thread(() -> {
+            try {
+                long l = System.currentTimeMillis();
+                exec.waitFor(waitSecond, TimeUnit.SECONDS);
+                if (exec.isAlive()) {
+                    System.err.println("Time out!!!");
+                    exec.destroy();
+                } else {
+                    long l2 = System.currentTimeMillis();
+                    System.err.println("time: " + (l2-l));
+                }
+            } catch (InterruptedException e) {
+                System.err.println("err");
+            }
+        }).start();
     }
 }

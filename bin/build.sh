@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 GIT_BRANCH=$1
 GIT_COMMIT=$2

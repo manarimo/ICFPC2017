@@ -35,12 +35,13 @@ def exe(map_path: Path, ai_commands, ruleset=None):
     cmd += ai_commands
     print(cmd)
     out = subprocess.check_output(cmd)
-    LOG_DIR.mkdir()
+    if not LOG_DIR.exists():
+        LOG_DIR.mkdir()
     filename = "{}.json".format(int(time.time() * 10 ** 6))
     log_path = Path(LOG_DIR / filename)
     with log_path.open("wb") as f:
         f.write(out)
-    print("alpaca link: http://alpaca.adlersprung.osak.jp/index.html#{}".format(filename))
+    print("alpaca link: http://alpaca.adlersprung.osak.jp/index.html#{}".format(filename.replace(".json", "")))
 
 
 def ai_command(commit):
@@ -96,7 +97,7 @@ def main():
     parser.add_argument("--ais", type=str, help="comma separated AI commit hashes")
     parser.add_argument("--random-ai-num", type=int, default=0, help="the number of AIs that will be randomly added as participants")
     parser.add_argument("--map", type=str, nargs='?', help="map json. if absent, randomly selected from ./map")
-    parser.add_argument("--repeat", type=int, default=1, help="the number of match to do")
+    parser.add_argument("--repeat", type=int, default=1, help="the number of match to do. ai order is shuffled")
     parser.add_argument("--ruleset", type=ruleset, nargs='?', help="comma separated additional rule set. if empty, rule set will be initial one. currently supported by zeus: x1=futures. Or, this argument supports special value lightning-random, random")
     args = parser.parse_args()
     if args.do_all:
@@ -118,6 +119,7 @@ def main():
     for i in range(args.repeat):
         print("match #{}".format(i + 1))
         exe(map_path, ai_commands, args.ruleset)
+        random.shuffle(ai_commands)
 
 
 if __name__ == '__main__':
