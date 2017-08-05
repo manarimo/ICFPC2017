@@ -21,7 +21,7 @@ def exe(map_path: Path, ai_commands, ruleset=None):
     cmd += ai_commands
     print(cmd)
     out = subprocess.check_output(cmd)
-    out_obj = json.loads(out)
+    out_obj = json.loads(out.decode("utf-8"))
     scores = {}
     for score in out_obj["scores"]:
         scores[score["punter"]] = score["score"]
