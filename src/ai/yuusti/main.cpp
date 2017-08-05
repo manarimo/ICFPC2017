@@ -341,7 +341,7 @@ int main() {
     Settings settings;
     switch (state_map.find(command)->second) {
         case HANDSHAKE:
-            cout << "hiyorin" << endl;
+            cout << "nitori-mu" << endl;
             break;
         case INIT:
             cin >> game >> settings;
