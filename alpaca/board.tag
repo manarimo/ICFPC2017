@@ -27,7 +27,7 @@
             <form onsubmit={submit}>
                 <input type="text" id="frame" value={this.frame} /> / <span>{this.histories.length}</span>
                 <ul>
-                    <li>矢印キーでフレームを操作できるよぉ</li>
+                    <li>矢印キーかhjklでフレームを操作できるよぉ</li>
                     <li>テキストボックスに数値を入れてEnterでそこまで飛ぶよぉ</li>
                 </ul>
             </form>
@@ -52,12 +52,12 @@
 
         keyPress(e) {
             console.log(e);
-            if (e.keyCode === 37) {
+            if (e.keyCode === 37 || e.key === 'h' || e.key === 'k') {
                 if (this.frame > 0) {
                     --this.frame;
                     this.update();
                 }
-            } else if (e.keyCode === 39) {
+            } else if (e.keyCode === 39 || e.key === 'l' || e.key === 'j') {
                 if (this.frame < this.histories.length) {
                     ++this.frame;
                     this.update();
@@ -72,7 +72,7 @@
         }
 
         this.on('mount', () => {
-            document.addEventListener('keypress', this.keyPress);
+            window.addEventListener('keydown', this.keyPress);
         });
 
         this.on('update', () => {
@@ -84,7 +84,7 @@
         });
 
         this.on('unmount', () => {
-            document.removeEventListener('keypress', this.keyPress);
+            window.removeEventListener('keydown', this.keyPress);
         });
 
         this.colors =
