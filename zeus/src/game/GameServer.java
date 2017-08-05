@@ -116,6 +116,7 @@ public class GameServer {
                 System.err.println("OK");
             } catch (final Exception e) {
                 System.err.println("ERROR");
+                zombie.set(i, true);
                 final InputStream errorStream = exec.getErrorStream();
                 final Scanner scanner = new Scanner(errorStream);
                 while (scanner.hasNextLine()) {
@@ -151,6 +152,7 @@ public class GameServer {
                     states.set(punterId, response.state);
                 } catch (final Exception e) {
                     System.err.println("ERROR");
+                    zombie.set(punterId, true);
                     final InputStream errorStream = exec.getErrorStream();
                     final Scanner scanner = new Scanner(errorStream);
                     while (scanner.hasNextLine()) {
@@ -294,7 +296,6 @@ public class GameServer {
                 if (exec.isAlive()) {
                     System.err.println("Time out!!!");
                     exec.destroy();
-                    zombie.set(punterId, true);
                 } else {
                     long l2 = System.currentTimeMillis();
                     System.err.println("time: " + (l2-l));
