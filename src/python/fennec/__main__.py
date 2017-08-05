@@ -90,13 +90,14 @@ def ruleset(ruleset_str):
 
 
 def choice(collection, weights):
+    collection = list(collection)
     acc = 0
     thresh = [0]
     for w in weights:
         acc += w
         thresh.append(acc)
     r = random.uniform(0, thresh[-1])
-    for i in range(len(weights)):
+    for i in range(len(collection)):
         if thresh[i] <= r <= thresh[i+1]:
             return collection[i]
 
