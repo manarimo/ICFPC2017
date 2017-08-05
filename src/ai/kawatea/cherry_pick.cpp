@@ -228,7 +228,7 @@ void output(int edge_id) {
 }
 
 void handshake() {
-    puts("kawatea-cherry-pick");
+    puts("kawatea-defensive-pick");
 }
 
 void init() {
