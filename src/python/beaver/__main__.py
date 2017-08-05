@@ -41,7 +41,7 @@ def process(log_path: Path):
     if not REPORT_DIR.exists():
         REPORT_DIR.mkdir()
     with alpaca_link_path.open("w") as f:
-        f.write(ALPACA_LINK_TEMPLATE.format(json_name=log_path.name))
+        f.write(ALPACA_LINK_TEMPLATE.format(json_name=log_path.name.replace(".json", "")))
 
 
 def aggregate(current, path: Path):

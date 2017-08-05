@@ -41,7 +41,7 @@ def exe(map_path: Path, ai_commands, ruleset=None):
     log_path = Path(LOG_DIR / filename)
     with log_path.open("wb") as f:
         f.write(out)
-    print("alpaca link: http://alpaca.adlersprung.osak.jp/index.html#{}".format(filename))
+    print("alpaca link: http://alpaca.adlersprung.osak.jp/index.html#{}".format(filename.replace(".json", "")))
 
 
 def ai_command(commit):
