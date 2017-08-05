@@ -44,7 +44,7 @@ def main():
             per_draw_agg[names[1]] += 1
         per_match_agg[names[0]] += 1
         per_match_agg[names[1]] += 1
-    all_names = list(per_win_agg.keys())
+    all_names = list(per_match_agg.keys())
     all_names.sort(key=lambda name: prob(per_win_agg[name], per_match_agg[name], per_draw_agg[name]), reverse=True)
     for name in all_names:
         win, all, draw = per_win_agg[name], per_match_agg[name], per_draw_agg[name]
