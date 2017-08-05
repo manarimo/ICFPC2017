@@ -1,8 +1,9 @@
 from pathlib import Path
 import json
-from collections import Counter
+from collections import Counter, defaultdict
 import elo
 import pandas as pd
+import numpy as np
 
 
 LOGS_DIR = Path("/var/local/logs/")
@@ -26,12 +27,16 @@ def main():
             continue
         with meta_path.open() as f:
             meta_json = json.load(f)
-        if "scores" not in meta_json or len(meta_json["scores"]) != 2:
+        punter_rank_scores = defaultdict(list)
+        all_names = meta_json["names"]
+        if "scores" not in meta_json:
             continue
-        scores = [0, 0]
-        names = meta_json["names"]
-        if names[0] == names[1]:
+        for sc in meta_json:
+            punter_rank_scores[all_names[sc["punter"]]].append(sc["rank_score"])
+        if len(punter_rank_scores) != 2:
             continue
+        names = list(punter_rank_scores.keys())
+        scores = [np.average(punter_rank_scores[name]) for name in names]
         for sc in meta_json["scores"]:
             scores[sc["punter"]] = sc["rank_score"]
         if scores[0] > scores[1]:
