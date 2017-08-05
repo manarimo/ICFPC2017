@@ -36,9 +36,11 @@ def exe(map_path: Path, ai_commands, ruleset=None):
     print(cmd)
     out = subprocess.check_output(cmd)
     LOG_DIR.mkdir()
-    log_path = Path(LOG_DIR / "{}.json".format(int(time.time() * 10 ** 6)))
+    filename = "{}.json".format(int(time.time() * 10 ** 6))
+    log_path = Path(LOG_DIR / filename)
     with log_path.open("wb") as f:
         f.write(out)
+    print("alpaca link: http://alpaca.adlersprung.osak.jp/index.html#{}".format(filename))
 
 
 def ai_command(commit):
