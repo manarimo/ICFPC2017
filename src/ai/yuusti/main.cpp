@@ -78,6 +78,7 @@ struct Result {
 };
 
 const int X = 10007;
+
 long long hash_edge(const vector<Edge> &edge) {
     // TODO: too slow
     const int MOD = static_cast<const int>(1e9 + 7);
@@ -95,6 +96,7 @@ inline double calc_ucb(double ex, int ni, int n) {
 struct UCBchild {
     double ex;
     int cnt;
+
     UCBchild() : ex(0), cnt(0) {}
 };
 
@@ -102,6 +104,7 @@ struct UCBnode {
     map<int, UCBchild> ch;
     double ex;
     int cnt;
+
     UCBnode() : ex(0), cnt(0) {}
 };
 
@@ -258,6 +261,19 @@ Result search(Game &game, int playout) {
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
+struct Settings {
+    int n;
+    vector<string> content;
+};
+
+istream &operator>>(istream &is, Settings &settings) {
+    is >> settings.n;
+    settings.content.resize(settings.n);
+    for (int i = 0; i < settings.n; ++i) {
+        is >> settings.content[i];
+    }
+    return is;
+}
 
 int main() {
     string command;
@@ -273,17 +289,18 @@ int main() {
     Game game;
     State state;
     Result result;
+    Settings settings;
     switch (state_map.find(command)->second) {
         case HANDSHAKE:
             cout << "hiyori-mu" << endl;
             break;
         case INIT:
-            cin >> game;
+            cin >> game >> settings;
             cout << 0 << endl;
             cout << "tsurapoyo~" << endl;
             break;
         case MOVE:
-            cin >> game >> state;
+            cin >> game >> settings >> state;
             result = search(game, playout_count);
             cout << result.edge << '\n' << result.state;
             break;
