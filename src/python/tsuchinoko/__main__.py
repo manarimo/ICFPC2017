@@ -82,6 +82,8 @@ def main():
     log_string = json.dumps(log)
     filename = "report-{}-{}.json".format(args.ai, int(time.time() * 10 ** 6))
     log_path = Path(LOG_DIR / filename)
+    if not LOG_DIR.exists():
+        LOG_DIR.mkdir()
     with log_path.open("wb") as f:
         f.write(log_string.encode("utf-8"))
 
