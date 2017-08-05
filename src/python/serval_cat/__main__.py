@@ -108,6 +108,8 @@ if __name__ == "__main__":
 
     print("Port: {0}, Name: {1}".format(args.port, args.name), file = sys.stderr)
     print("Command: {0}".format(" ".join(command)), file = sys.stderr)
+
+    log = {"history": []}
     
     with GameClient(HOST, args.port, args.name) as client:
         # Handshake
@@ -117,12 +119,20 @@ if __name__ == "__main__":
         # Set up
         setup_input = client.recv_object()
         map = setup_input["map"]
+        log["numPunter"] = setup_input["punters"]
+        log["map"] = map
         print("Setting up...", file = sys.stderr)
-        print("Punter: {0}".format(setup_input["punter"]), file = sys.stderr)
+        print("Punter: {0}, #Punters".format(setup_input["punter"], setup_input["punters"]), file = sys.stderr)
         print("#Vertices: {0}, #Edges: {1}, #Mines: {2}".format(len(map["sites"]), len(map["rivers"]), len(map["mines"])), file = sys.stderr)
+        if "settings" in setup_input:
+            settings = setup_input
+        else:
+            settings = None
+        print("Settings: {0}".format(settings), file = sys.stderr)
         setup_output = decode_json(execute_command(command, setup_input))
         state = setup_output["state"]
-        client.send_object({"ready": setup_output["ready"]})
+        del setup_output["state"]
+        client.send_object(setup_output)
         print("AI ready", file = sys.stderr)
 
         # Game play

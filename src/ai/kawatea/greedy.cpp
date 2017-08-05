@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstdlib>
 #include <vector>
 #include <queue>
 #include <algorithm>
@@ -83,6 +84,7 @@ void output(int edge_id) {
     printf("%d", mines.size());
     for (i = 0; i < mines.size(); i++) printf(" %d", mines[i]);
     puts("");
+    exit(0);
 }
 
 void handshake() {
@@ -91,13 +93,13 @@ void handshake() {
 
 void init() {
     int i, j;
-    vector <pair<int, int> > order;
+    vector <pair<int, pair<int, int> > > order;
     queue <int> q;
     
     input(false);
     
     for (i = 0; i < mines.size(); i++) {
-        int last = -1;
+        int last = -1, connected = 0;
         
         for (j = 0; j < n; j++) dist[j] = inf;
         
@@ -106,6 +108,7 @@ void init() {
         
         while (!q.empty()) {
             last = q.front();
+            connected++;
             
             q.pop();
             
@@ -119,17 +122,17 @@ void init() {
             }
         }
         
-        order.push_back(make_pair(dist[last], mines[i]));
+        order.push_back(make_pair(-connected, make_pair(dist[last], mines[i])));
     }
     
     sort(order.begin(), order.end());
     
-    for (i = 0; i < order.size(); i++) mines[i] = order[i].second;
+    for (i = 0; i < order.size(); i++) mines[i] = order[i].second.second;
     
     output(-1);
 }
 
-bool near_lambda() {
+void near_mine() {
     int start = mines[0], i, j;
     queue <int> q;
     
@@ -166,10 +169,7 @@ bool near_lambda() {
         
         q.pop();
         
-        if (used[last] == 0 && mine[last] == 1) {
-            output(parent[last]);
-            return true;
-        }
+        if (used[last] == 0 && mine[last] == 1) output(parent[last]);
         
         for (i = 0; i < graph[last].size(); i++) {
             int next = graph[last][i].to;
@@ -185,12 +185,10 @@ bool near_lambda() {
             }
         }
     }
-    
-    return false;
 }
 
-bool greedy() {
-    int start = mines[0], id = -1, i, j;
+void greedy() {
+    int start = mines[0], id = -1, i, j, k;
     long long best = 0;
     vector <int> connected;
     queue <int> q;
@@ -224,70 +222,63 @@ bool greedy() {
     }
     
     for (i = 0; i < n; i++) {
-        for (j = 0; j < graph[i].size(); j++) {
-            if (graph[i][j].owner == -1) {
-                int from = i, to = graph[i][j].to;
+        int from = i;
+        
+        if (used[from] == 0) continue;
+        
+        for (j = 0; j < graph[from].size(); j++) {
+            int to = graph[from][j].to;
+            
+            if (graph[from][j].owner == -1 && used[to] == 0) {
+                long long score = sum[to];
                 
-                if (used[from] == used[to]) continue;
+                for (k = 0; k < graph[to].size(); k++) {
+                    int next = graph[to][k].to;
+                    
+                    if (graph[to][k].owner == -1 && used[next] == 0) score += (long long)dist[next] * dist[next] / 2;
+                }
                 
-                if (used[to] == 1) swap(from, to);
-                
-                if (sum[to] > best) {
-                    best = sum[to];
-                    id = graph[i][j].id;
+                if (score > best) {
+                    best = score;
+                    id = graph[from][j].id;
                 }
             }
         }
     }
     
-    if (best > 0) {
-        output(id);
-        return true;
-    } else {
-        return false;
-    }
+    if (best > 0) output(id);
 }
 
-bool next_mine() {
+void next_mine() {
     int i;
     
     while (mines.size() > 0) {
         int start = mines[0];
         
         for (i = 0; i < graph[start].size(); i++) {
-            if (graph[start][i].owner == -1) {
-                output(graph[start][i].id);
-                return true;
-            }
+            if (graph[start][i].owner == -1) output(graph[start][i].id);
         }
         
         mines.erase(mines.begin());
     }
-    
-    return false;
 }
 
-bool eager() {
+void eager() {
     int i, j;
     
     for (i = 0; i < n; i++) {
         for (j = 0; j < graph[i].size(); j++) {
-            if (graph[i][j].owner == -1) {
-                output(graph[i][j].id);
-                return true;
-            }
+            if (graph[i][j].owner == -1) output(graph[i][j].id);
         }
     }
-    
-    return false;
 }
 
 void move() {
     input(true);
     
-    if (mines.size() > 0 && near_lambda()) return;
-    if (mines.size() > 0 && greedy()) return;
-    if (next_mine()) return;
+    if (mines.size() > 0) near_mine();
+    if (mines.size() > 0) greedy();
+    if (mines.size() > 0) next_mine();
     eager();
 }
 
