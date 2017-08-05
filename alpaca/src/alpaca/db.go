@@ -39,7 +39,11 @@ func (db *AdlersprungDB) CloseConnection() {
 }
 
 func (db *AdlersprungDB) FetchRecentMatchDatas() ([]Match, error) {
-	rows, err := db.db.Query("SELECT a.id, a.match_type, b.player_name FROM match_log AS a LEFT JOIN player_match_log AS b ON a.id = b.match_id ORDER BY a.id DESC, b.player_id ASC LIMIT 100")
+	rows, err := db.db.Query(`SELECT a.id, a.match_type, b.player_name
+	FROM match_log AS a
+	LEFT JOIN player_match_log AS b ON a.id = b.match_id
+	WHERE match_type != 'random'
+	ORDER BY a.id DESC, b.player_id ASC LIMIT 100`)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil, err
