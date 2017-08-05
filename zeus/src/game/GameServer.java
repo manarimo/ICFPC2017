@@ -132,9 +132,8 @@ public class GameServer {
 
             try {
                 final GameplayResponse response = JsonUtil.read(inputStream, GameplayResponse.class);
-                handle(response.toMove());
+                handle(response.toMove(), punterId);
                 states.set(punterId, response.state);
-                history.add(response.toMove());
                 int score = score(punterId);
                 scores.add(score);
                 System.err.println("OK");
@@ -168,18 +167,20 @@ public class GameServer {
                 .collect(Collectors.toList());
     }
 
-    private void handle(final Move move) {
+    private void handle(final Move move, final int punterId) {
         if (move.claim == null) {
-            return;
+            history.add(Move.of(new Move.Pass(punterId)));
         }
         final Move.Claim claim = move.claim;
         River river = claim.toRiver();
         if (!remainingRivers.contains(river)) {
+            history.add(Move.of(new Move.Pass(punterId)));
             //todo warning
             return;
         }
         remainingRivers.remove(river);
         claimedRivers.get(claim.punter).add(river);
+        history.add(move);
     }
 
     private Integer findFutureTarget(final int punterId, final int mineSiteId) {

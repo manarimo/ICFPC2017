@@ -32,5 +32,9 @@ public class Move {
 
     public static class Pass {
         public int punter;
+
+        public Pass(final int punter) {
+            this.punter = punter;
+        }
     }
 }
