@@ -121,7 +121,7 @@ double score(Game &game, vector<vector<int> >& dist, vector<vector<Edge> >& es, 
     for (int i = 0; i < game.mines; i++) {
         int mine = game.mine[i];
         vector<double> conn(game.n);
-        connectivity(game, es, conn, 1, mine, mine, set<int>(), 8, newEdge);
+        connectivity(game, es, conn, 1, mine, mine, set<int>(), 5, newEdge);
         //for (int j = 0; j < game.n; j++) cerr << conn[j] << " "; cerr << endl;
         for (int j = 0; j < game.n; j++) {
             s += conn[j] * dist[i][j] * dist[i][j];
