@@ -108,7 +108,7 @@ vector<int> degree;
 vector<int> used;
 
 void input(bool read_state) {
-    int n, m, mine;
+    int n, m, mine, setting;
     
     scanf("%d", &punter);
     scanf("%d", &punter_id);
@@ -142,6 +142,12 @@ void input(bool read_state) {
         }
     }
     
+    scanf("%d", &setting);
+    for (int i = 0; i < setting; i++) {
+        char option[10];
+        scanf("%s", option);
+    }
+    
     if (read_state) {
         int stage, index;
         scanf("%d %d", &stage, &index);
@@ -152,14 +158,6 @@ void input(bool read_state) {
             int v;
             scanf("%d", &v);
             state.add_mine(v);
-        }
-    } else {
-        int num;
-        scanf("%d", &num);
-        
-        for (int i = 0; i < num; i++) {
-            char option[10];
-            scanf("%s", option);
         }
     }
 }
