@@ -119,7 +119,7 @@ def win_rate(me, opponent):
 
 def entropy(p):
     if min(p, 1-p) < 1e-6:
-        return 0
+        return 0.
     return -p * np.log2(p) - (1 - p) * np.log2(1 - p)
 
 
@@ -139,6 +139,11 @@ def sample_ais(n):
         "match_count": 0,
         "rating": average_rate
     }
+    for sc in ratings:
+        if unpredictability(ratings[sc]["rating"], average_rate) < 1e-5:
+            print(sc)
+            print("probably this ai does not receive enough match. replacing with dummy")
+            ratings[sc] = dummy
     for tup in tag_tuples:
         matches = [ratings.get(name, dummy)["match_count"] for name in tup]
         rates = [ratings.get(name, dummy)["rating"] for name in tup]
