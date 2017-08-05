@@ -105,7 +105,7 @@ public class GameServer {
             final InputStream inputStream = exec.getInputStream();
             JsonUtil.write(outputStream, request);
             outputStream.close();
-            setTimeout(exec, 10, i);
+            setTimeout(exec, 10);
 
             try {
                 final SetupResponse response = JsonUtil.read(inputStream, SetupResponse.class);
@@ -144,7 +144,7 @@ public class GameServer {
                 final OutputStream outputStream = exec.getOutputStream();
                 JsonUtil.write(outputStream, request);
                 outputStream.close();
-                setTimeout(exec, 1, punterId);
+                setTimeout(exec, 1);
 
                 try {
                     final GameplayResponse response = JsonUtil.read(inputStream, GameplayResponse.class);
@@ -288,7 +288,7 @@ public class GameServer {
         }
     }
 
-    private void setTimeout(final Process exec, final int waitSecond, final int punterId) {
+    private void setTimeout(final Process exec, final int waitSecond) {
         new Thread(() -> {
             try {
                 long l = System.currentTimeMillis();
@@ -296,6 +296,7 @@ public class GameServer {
                 if (exec.isAlive()) {
                     System.err.println("Time out!!!");
                     exec.destroy();
+                    throw new RuntimeException("Time out");
                 } else {
                     long l2 = System.currentTimeMillis();
                     System.err.println("time: " + (l2-l));
