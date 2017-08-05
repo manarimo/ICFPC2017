@@ -21,7 +21,7 @@ def main():
         scores = [0, 0]
         names = meta_json["names"]
         for sc in meta_json["scores"]:
-            scores[sc["panter"]] = sc["rank_score"]
+            scores[sc["punter"]] = sc["rank_score"]
         if scores[0] > scores[1]:
             kati[(names[0], names[1])] += 1
             per_win_agg[names[0]] += 1
