@@ -38,6 +38,10 @@ def main():
         if len(punter_rank_scores) != 2:
             continue
         names = list(punter_rank_scores.keys())
+        if [name for name in names if len(name) == 40]:
+            print(names)
+            print("seems to be commit hash. skipping")
+            continue
         scores = [np.average(punter_rank_scores[name]) for name in names]
         if scores[0] > scores[1]:
             kati[(names[0], names[1])] += 1
