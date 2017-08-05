@@ -38,7 +38,8 @@ def main():
         for opponent in all_names:
             win, lose = kati[(name, opponent)], kati[(opponent, name)]
             all = win + lose
-            print(" - vs {}: {:.5f}% ({} / {})".format(opponent, win / all, win, all))
+            prob = win / all if all > 0 else 0
+            print(" - vs {}: {:.5f}% ({} / {})".format(opponent, prob, win, all))
 
 
 if __name__ == '__main__':
