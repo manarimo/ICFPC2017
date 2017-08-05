@@ -56,16 +56,16 @@ ostream &operator<<(ostream &os, const Game &g) {
 }
 
 struct State {
-    int cur, goal, start;
+    string s;
 };
 
 istream &operator>>(istream &is, State &s) {
-    is >> s.cur >> s.goal >> s.start;
+    is >> s.s;
     return is;
 }
 
 ostream &operator<<(ostream &os, const State &s) {
-    cout << s.cur << ' ' << s.goal << ' ' << s.start << endl;
+    cout << s.s;
     return os;
 }
 
@@ -270,6 +270,7 @@ int main() {
             break;
         case INIT:
             cin >> game;
+            cout << 0 << endl;
             cout << "tsurapoyo~" << endl;
             break;
         case MOVE:
