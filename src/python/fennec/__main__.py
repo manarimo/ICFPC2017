@@ -24,17 +24,23 @@ def list_map_paths():
     return list(Path(ROOT_DIR / "map").iterdir())
 
 
-def exe(map_path: Path, ai_commands):
+def exe(map_path: Path, ai_commands, ruleset=None):
+    ruleset = ruleset or []
+    print("ruleset:", ruleset)
+    ruleset_args = ["-{}".format(rule) for rule in ruleset]
     cmd = ["java", "-cp", "/var/icfpc/zeus/build:/var/icfpc/zeus/lib/*", "Main"]
+    cmd += ruleset_args
     cmd.append(str(map_path.absolute()))
     cmd.append(str(len(ai_commands)))
     cmd += ai_commands
     print(cmd)
     out = subprocess.check_output(cmd)
     LOG_DIR.mkdir()
-    log_path = Path(LOG_DIR / "{}.json".format(int(time.time() * 10 ** 6)))
+    filename = "{}.json".format(int(time.time() * 10 ** 6))
+    log_path = Path(LOG_DIR / filename)
     with log_path.open("wb") as f:
         f.write(out)
+    print("alpaca link: http://alpaca.adlersprung.osak.jp/index.html#{}".format(filename))
 
 
 def ai_command(commit):
@@ -65,7 +71,19 @@ def main_all(args):
     for aip in itertools.combinations(ais, 2):
         for map_path in list_map_paths():
             ai_commands = [ai_command(commit) for commit in aip]
-            exe(map_path, ai_commands)
+            exe(map_path, ai_commands, ruleset)
+
+
+def ruleset(ruleset_str):
+    if not ruleset_str:
+        return []
+    if ruleset_str == "lightning_random":
+        return random.choice([[], ["x1"]])
+    if ruleset_str == "random":
+        full_rules = ["x1"]
+        subsets = sum((list(itertools.combinations(full_rules, r)) for r in range(len(full_rules) + 1)), [])
+        return random.choice(subsets)
+    return ruleset_str.strip().split(',')
 
 
 def main():
@@ -77,8 +95,9 @@ def main():
     parser.add_argument("--only-tagged", action="store_true", help="if --do-all is given. use only ais with tagged. if --do-all is absent, random sampling is done from tagged")
     parser.add_argument("--ais", type=str, help="comma separated AI commit hashes")
     parser.add_argument("--random-ai-num", type=int, default=0, help="the number of AIs that will be randomly added as participants")
-    parser.add_argument("--map", type=str, default=None, help="map json. if absent, randomly selected from ./map")
+    parser.add_argument("--map", type=str, nargs='?', help="map json. if absent, randomly selected from ./map")
     parser.add_argument("--repeat", type=int, default=1, help="the number of match to do")
+    parser.add_argument("--ruleset", type=ruleset, nargs='?', help="comma separated additional rule set. if empty, rule set will be initial one. currently supported by zeus: x1=futures. Or, this argument supports special value lightning-random, random")
     args = parser.parse_args()
     if args.do_all:
         main_all(args)
@@ -93,11 +112,12 @@ def main():
         ai_commits += args.ais.split(',')
     tags = tag_names()
     to_sample = list(tags.values()) if args.only_tagged else list_ais()
-    ai_commits += random.sample(to_sample, args.random_ai_num)
+    for i in range(args.random_ai_num):
+        ai_commits.append(random.choice(to_sample))
     ai_commands = [ai_command(tags.get(commit, commit)) for commit in ai_commits]
     for i in range(args.repeat):
         print("match #{}".format(i + 1))
-        exe(map_path, ai_commands)
+        exe(map_path, ai_commands, args.ruleset)
 
 
 if __name__ == '__main__':
