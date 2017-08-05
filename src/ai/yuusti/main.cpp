@@ -122,7 +122,6 @@ ostream &operator<<(ostream &os, const State &s) {
     int n = s.dist.size();
     os << n << '\n';
     for (int i = 0; i < n; ++i) {
-        cout << n;
         for (int j = 0; j < n; ++j) {
             os << ' ' << s.dist[i][j];
         }
