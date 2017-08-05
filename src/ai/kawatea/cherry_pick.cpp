@@ -102,6 +102,57 @@ class State {
     vector<int> mines;
 } state;
 
+class UnionFind {
+    public:
+    UnionFind(int n) : component(n) {
+        parent = (int *)malloc(sizeof(int) * n);
+        for (int i = 0; i < n; i++) parent[i] = -1;
+    }
+    
+    ~UnionFind() {
+        free(parent);
+    }
+    
+    int find(int x) {
+        if (parent[x] < 0) return x;
+        
+        return parent[x] = find(parent[x]);
+    }
+    
+    void unite(int x, int y) {
+        x = find(x);
+        y = find(y);
+        
+        if (x == y) return;
+        
+        component--;
+        
+        if (parent[x] < parent[y]) {
+            parent[x] += parent[y];
+            parent[y] = x;
+        } else {
+            parent[y] += parent[x];
+            parent[x] = y;
+        }
+    }
+    
+    bool same(int x, int y) {
+        return find(x) == find(y);
+    }
+    
+    int size(int x) {
+        return -parent[find(x)];
+    }
+    
+    int count(void) {
+        return component;
+    }
+    
+    private:
+    int component;
+    int *parent;
+};
+
 vector<vector<Edge>> graph;
 vector<int> degree;
 vector<int> used;
@@ -176,7 +227,7 @@ void output(int edge_id) {
 }
 
 void handshake() {
-    puts("kawatea-aggressive-pick");
+    puts("kawatea-balanced-pick");
 }
 
 void init() {
@@ -215,19 +266,32 @@ void init() {
 }
 
 void cherry_pick() {
-    for (int mine : state.get_mines()) {
-        int best = 0, id = -1;
-        if (used[mine] == 1) continue;
-        
-        for (const Edge& edge: graph[mine]) {
-            if (!edge.is_free()) continue;
-            if (degree[edge.to] > best) {
-                best = degree[edge.to];
-                id = edge.id;
-            }
+    int component = 0;
+    UnionFind uf(graph.size());
+    for (int i = 0; i < graph.size(); i++) {
+        for (const Edge& edge : graph[i]) {
+            if (edge.belongs()) uf.unite(i, edge.to);
         }
-        
-        if (best - 2 >= degree[mine]) output(id);
+    }
+    for (int i = 0; i < graph.size(); i++) {
+        if (uf.find(i) == i && uf.size(i) > 1) component++;
+    }
+    
+    if (component < 3) {
+        for (int mine : state.get_mines()) {
+            int best = 0, id = -1;
+            if (used[mine] == 1) continue;
+            
+            for (const Edge& edge : graph[mine]) {
+                if (!edge.is_free()) continue;
+                if (degree[edge.to] > best) {
+                    best = degree[edge.to];
+                    id = edge.id;
+                }
+            }
+            
+            if (best - 2 >= degree[mine]) output(id);
+        }
     }
 }
 
