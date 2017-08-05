@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 	"io"
-	"io/ioutil"
+	"path/filepath"
 	"net/http"
 	"encoding/json"
 	"strings"
@@ -40,17 +40,49 @@ func getLogDir() string {
 	return "/var/local/logs"
 }
 
+type LogSpec struct {
+	Name    string   `json:"name"`
+	Players []string `json:"players"`
+}
+
+func loadMeta(path string) (LogSpec, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return LogSpec{}, err
+	}
+
+	type Meta struct {
+		Names []string `json:"names"`
+	}
+	dec := json.NewDecoder(f)
+	meta := Meta{}
+	dec.Decode(&meta)
+
+	start := strings.LastIndex(path, "/") + 1
+	end := strings.Index(path, "_")
+	return LogSpec {
+		Name: path[start:end],
+		Players: meta.Names,
+	}, nil
+}
+
 func listLogsHandler(w http.ResponseWriter, r *http.Request) {
-	files, err := ioutil.ReadDir(getLogDir())
+	files, err := filepath.Glob(getLogDir() + "/*_meta.json")
 	if err != nil {
 		w.WriteHeader(404)
 		return
 	}
 
-	logs := make([]string, len(files))
+	logs := make([]LogSpec, 0)
 	for _, f := range files {
-		logs = append(logs, f.Name())
+		if strings.HasSuffix(f, "meta.json") {
+			meta, err := loadMeta(f)
+			if err == nil {
+				logs = append(logs, meta)
+			}
+		}
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
 	enc.Encode(logs)
@@ -59,7 +91,7 @@ func listLogsHandler(w http.ResponseWriter, r *http.Request) {
 func fetchLogHandler(w http.ResponseWriter, r *http.Request) {
 	parts := strings.SplitN(r.URL.Path, "/", 4)
 	fmt.Printf("%v", parts)
-	logFile := getLogDir() + "/" + parts[len(parts) - 1]
+	logFile := getLogDir() + "/" + parts[len(parts)-1] + ".json"
 	f, err := os.Open(logFile)
 	if err != nil {
 		w.WriteHeader(404)

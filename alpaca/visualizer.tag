@@ -1,15 +1,20 @@
 <visualizer>
     <div style="display: flex">
         <board state={this.state} if={this.state} />
-        <ul>
-            <li each={log in this.logs}>
-                <a href="#{log}" onclick={change} data-logname={log}>{log}</a>
-            </li>
-        </ul>
+        <div>
+            <input type="input" id="filter" onkeyup={updateFilter} />
+            <ul>
+                <li each={log in this.filtered(this.logs)}>
+                    <a href="#{log.name}" onclick={change} data-logname={log.name}>{log.name}</a>
+                    <span>({log.players.join(', ')})</span>
+                </li>
+            </ul>
+        </div>
     </div>
 
     <script>
         this.state = null;
+        this.text = '';
         fetch('/api/list_logs')
             .then((response) => response.json())
             .then((json) => {
@@ -36,6 +41,14 @@
         change(e) {
             const name = e.target.dataset.logname;
             this.load(name);
+        }
+
+        updateFilter(e) {
+            this.text = e.target.value;
+        }
+
+        filtered() {
+            return this.logs.filter((spec) => spec.name.includes(this.text) || spec.players.some((p) => p.includes(this.text)));
         }
     </script>
 </visualizer>
