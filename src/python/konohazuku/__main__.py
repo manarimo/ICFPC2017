@@ -66,7 +66,7 @@ def main():
             nall = win + lose
             draw = draws[(name, opponent)]
             all = nall + draw
-            column = " - vs {}: {:.2f}% ({} / {}, draw: {})".format(opponent.strip(), prob(win, all, draw) * 100, win, nall, draw)
+            column = "{:.2f}% ({} / {}, draw: {})".format(prob(win, all, draw) * 100, win, nall, draw)
             print(column)
             row.append(column)
         data_table.append(row)
