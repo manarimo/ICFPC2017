@@ -96,15 +96,27 @@ def hit_command(command, obj):
     handshake = json.loads(buffer[colon_index + 1:])
     process.stdin.write(encode_json({"you": handshake["me"]}) + encode_json(obj))
 
+def aggregate_moves(moves):
+    result = {}
+    for move in moves:
+        if "pass" in move:
+            p = move["pass"]["punter"]
+        else:
+            p = move["claim"]["punter"]
+        result[p] = move
+    return result
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Talk to online server")
     parser.add_argument("port", help="Port Number", type=int)
     parser.add_argument("name", help="Name of the AI", type=str)
     parser.add_argument("command", help="Command to execute", nargs='+')
     parser.add_argument("-v", "--verbose", help="Output vervose log", action="store_true")
+    parser.add_argument("-o", "--output", help="Output path of replay file", type=str, default="replay.json")
     args = parser.parse_args()
     command = args.command
     verbose = args.verbose
+    output_path = args.output
 
     print("Port: {0}, Name: {1}".format(args.port, args.name), file = sys.stderr)
     print("Command: {0}".format(" ".join(command)), file = sys.stderr)
@@ -119,34 +131,51 @@ if __name__ == "__main__":
         # Set up
         setup_input = client.recv_object()
         map = setup_input["map"]
-        log["numPunter"] = setup_input["punters"]
+        punter = setup_input["punter"]
+        num_punter = setup_input["punters"]
+        log["numPunter"] = num_punter
         log["map"] = map
-        print("Setting up...", file = sys.stderr)
-        print("Punter: {0}, #Punters".format(setup_input["punter"], setup_input["punters"]), file = sys.stderr)
-        print("#Vertices: {0}, #Edges: {1}, #Mines: {2}".format(len(map["sites"]), len(map["rivers"]), len(map["mines"])), file = sys.stderr)
         if "settings" in setup_input:
             settings = setup_input
         else:
-            settings = None
+            settings = {}
+        log["settings"] = settings
+
+        print("Setting up...", file = sys.stderr)
+        print("Punter: {0}, #Punters".format(punter, num_punter), file = sys.stderr)
+        print("#Vertices: {0}, #Edges: {1}, #Mines: {2}".format(len(map["sites"]), len(map["rivers"]), len(map["mines"])), file = sys.stderr)
         print("Settings: {0}".format(settings), file = sys.stderr)
+
         setup_output = decode_json(execute_command(command, setup_input))
+        futures = [[]] * num_punter
+        if "futures" in setup_output and "futures" in settings and settings["futures"]:
+            myfutures = setup_output["futures"]
+            futures[punter] = myfutures
+        log["futures"] = futures
         state = setup_output["state"]
         del setup_output["state"]
         client.send_object(setup_output)
         print("AI ready", file = sys.stderr)
 
+        is_first_turn = True
         # Game play
         while True:
             obj = client.recv_object()
             if "stop" in obj:
                 # Clean up
                 hit_command(command, obj)
+                if not is_first_turn:
+                    for i in range(punter, num_punter):
+                        log["history"].append({"move": moves[i], "score": -1})
+                for i in range(0, punter):
+                    log["history"].append({"move": moves[i], "score": -1})
+                log["history"] = log["history"][:len(map["rivers"])]
                 print("Game finished!", file = sys.stderr)
                 print(obj["stop"]["scores"], file = sys.stderr)
+                log["scores"] = obj["stop"]["scores"]
                 break
             if "timeout" in obj:
                 continue
-
             obj["state"] = state
             result = decode_json(execute_command(command, obj))
             state = result["state"]
@@ -156,3 +185,12 @@ if __name__ == "__main__":
             elif "pass" in result:
                 print("Move: Pass", file = sys.stderr)
             client.send_object(result)
+            moves = aggregate_moves(obj["move"]["moves"])
+            if not is_first_turn:
+                for i in range(punter, num_punter):
+                    log["history"].append({"move": moves[i], "score": -1})
+            for i in range(0, punter):
+                log["history"].append({"move": moves[i], "score": -1})
+
+            is_first_turn = False
+        print(json.dumps(log), file = open(output_path, "w"))

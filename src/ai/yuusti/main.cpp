@@ -275,7 +275,7 @@ int main() {
     Result result;
     switch (state_map.find(command)->second) {
         case HANDSHAKE:
-            cout << "tsurapoyo" << endl;
+            cout << "hiyori-mu" << endl;
             break;
         case INIT:
             cin >> game;
