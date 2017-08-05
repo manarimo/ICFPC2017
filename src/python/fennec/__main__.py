@@ -121,9 +121,11 @@ def unpredictability(me, opponent):
 
 
 def sample_ais(n):
+    if n < 1:
+        return []
     tags = list(tag_names().keys())
     weights = []
-    tag_tuples = itertools.combinations(tags, n)
+    tag_tuples = list(itertools.combinations(tags, n))
     ratings = konoha_scores()
     average_rate = np.average([sc["rating"] for sc in ratings.values()])
     dummy = {
