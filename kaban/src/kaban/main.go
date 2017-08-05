@@ -103,7 +103,7 @@ func main() {
 	fmt.Println("Done")
 
 	fmt.Println("Start inserting match")
-	stmt2, err := db.Prepare("INSERT INTO match_log (match_type, log) VALUES (?, ?)")
+	stmt2, err := db.Prepare("INSERT INTO match_log (match_type, tag, log) VALUES (?, ?, ?)")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -114,8 +114,9 @@ func main() {
 	}
 	defer stmt3.Close()
 
+	tag := os.Args[1]
 	for i, match := range matches {
-		result, err := stmt2.Exec(match.metadata.MatchType, match.log)
+		result, err := stmt2.Exec(match.metadata.MatchType, tag, match.log)
 		if err != nil {
 			fmt.Printf("Error: skipping %d due to %s\n", i, err.Error())
 			continue

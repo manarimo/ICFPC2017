@@ -8,9 +8,10 @@ import (
 	"strings"
 	"fmt"
 	"strconv"
+	"alpaca"
 )
 
-var db = OpenConnection()
+var db = alpaca.OpenConnection()
 
 func staticHandler(w http.ResponseWriter, r *http.Request) {
 	f, err := os.Open("./" + r.URL.Path)
