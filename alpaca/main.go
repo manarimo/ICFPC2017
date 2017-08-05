@@ -50,6 +50,7 @@ func loadMeta(path string) (LogSpec, error) {
 	if err != nil {
 		return LogSpec{}, err
 	}
+	defer f.Close()
 
 	type Meta struct {
 		Names []string `json:"names"`
