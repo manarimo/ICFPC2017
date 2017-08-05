@@ -55,7 +55,15 @@ istream &operator>>(istream &is, Game &g) {
 }
 
 ostream &operator<<(ostream &os, const Game &g) {
-    cout << "game!!!" << endl;
+    os << g.punter << endl << g.punter_id << endl << g.n << endl << g.mines << endl;
+    for (int i = 0; i < g.mines; ++i) {
+        os << g.mine[i] << (i == g.mines - 1) ? "": " ";
+    }
+    os << endl << g.m << endl;
+    for (int i = 0; i < g.m; ++i) {
+        os << g.edge[i].from << ' ' << g.edge[i].to << ' ' << g.edge[i].owner << endl;
+        auto &e = g.edge[i];
+    }
     return os;
 }
 
@@ -212,7 +220,7 @@ long long random_play(const Game &game, int turn) {
     // 隣接辺からランダム
     priority_queue<pair<double, int>> q;
 
-    vector<int> inqueue(game.n);
+    vector<int> inqueue(game.m);
     for (auto e: cand) {
         inqueue[e] = 1;
         q.emplace(mt_rand(), e);
@@ -221,12 +229,13 @@ long long random_play(const Game &game, int turn) {
     while (!q.empty()) {
         auto p = q.top();
         q.pop();
+        auto &e1 = edge[p.second];
 
-        edge[p.second].owner = get_player_id(game.punter_id, game.punter, turn++);
+        e1.owner = get_player_id(game.punter_id, game.punter, turn++);
         // TODO: reduce order..
-        for (int i = 0; i < game.edge.size(); ++i) {
-            auto &e = game.edge[i];
-            if (e.owner == -1 && !inqueue[i] && (e.from == p.second || e.to == p.first))  {
+        for (int i = 0; i < edge.size(); ++i) {
+            auto &e2 = edge[i];
+            if (e2.owner == -1 && !inqueue[i] && (e1.from == e2.from || e1.to == e2.to || e1.from == e2.to || e1.to == e2.from))  {
                 inqueue[i] = 1;
                 q.emplace(mt_rand(), i);
             }
@@ -333,10 +342,11 @@ int main() {
     Settings settings;
     switch (state_map.find(command)->second) {
         case HANDSHAKE:
-            cout << "hiyori-mu" << endl;
+            cout << "hiyorin" << endl;
             break;
         case INIT:
             cin >> game >> settings;
+            cerr << game << endl;
             cout << 0 << endl;
             cout << "tsurapoyo~" << endl;
             break;
