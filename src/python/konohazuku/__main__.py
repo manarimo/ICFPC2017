@@ -37,8 +37,6 @@ def main():
             continue
         names = list(punter_rank_scores.keys())
         scores = [np.average(punter_rank_scores[name]) for name in names]
-        for sc in meta_json["scores"]:
-            scores[sc["punter"]] = sc["rank_score"]
         if scores[0] > scores[1]:
             kati[(names[0], names[1])] += 1
             per_win_agg[names[0]] += 1
