@@ -120,7 +120,7 @@ end
 
 class Move < Struct.new(:action, :punter, :edge)
   def self.from_json(json, map)
-    if json.key?('claim')
+    if json['claim']
       from = json['claim']['source'].to_i
       to = json['claim']['target'].to_i
       edge_id = map.edge(from, to)

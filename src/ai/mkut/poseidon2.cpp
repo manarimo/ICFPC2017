@@ -171,7 +171,7 @@ Result move(Game &game, State &state) {
     }
 
     double maxScore = 0;
-    int maxIdx = 0;
+    int maxIdx = -1;
 
     for (int i = 0; i < game.m; i++) {
         if (game.edge[i].owner == -1) {
