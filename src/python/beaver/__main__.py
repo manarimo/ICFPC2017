@@ -31,6 +31,10 @@ def process(log_path: Path):
         log_json = json.load(f)
         if "names" in log_json:
             metadata["names"] = log_json["names"]
+        raw_scores = [sc["score"] for sc in log_json["scores"]]
+        metadata["scores"] = log_json["scores"]
+        for sc in metadata["scores"]:
+            sc["rank_score"] = len(list(rs for rs in raw_scores if rs <= sc["score"]))
     with meta_path.open("w") as f:
         json.dump(metadata, f)
     alpaca_link_path = Path(REPORT_DIR / "index.html")
@@ -40,10 +44,24 @@ def process(log_path: Path):
         f.write(ALPACA_LINK_TEMPLATE.format(json_name=log_path.name))
 
 
+def aggregate(current, path: Path):
+    with path.open() as f:
+        meta_json = json.load(f)
+        for sc in meta_json["scores"]:
+            name = meta_json["names"][sc["punter"]]
+            rs = sc["rank_score"]
+            current[name] = current.get(name, 0) + rs
+
+
 def main():
     for log_path in LOG_DIR.iterdir():
         if log_path.name.endswith(".json"):
             process(log_path)
+    aggregated_rank_scores = dict()
+    for log_path in LOG_DIR.iterdir():
+        if log_path.name.endswith("meta.json"):
+            aggregate(aggregated_rank_scores, log_path)
+    print(aggregated_rank_scores)
 
 
 if __name__ == '__main__':
