@@ -14,13 +14,15 @@ public class Scores {
     public List<List<Future>> futures;
     public List<State> history;
     public List<Score> scores;
+    public List<String> names;
 
-    public Scores(final Map map, final Settings settings, final int numPunter, final List<List<Future>> futures, final List<State> history, final List<Score> scores) {
+    public Scores(final Map map, final Settings settings, final int numPunter, final List<List<Future>> futures, final List<State> history, final List<Score> scores, final List<String> names) {
         this.map = map;
         this.settings = settings;
         this.numPunter = numPunter;
         this.futures = futures;
         this.history = history;
         this.scores = scores;
+        this.names = names;
     }
 }
