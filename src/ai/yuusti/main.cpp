@@ -328,12 +328,18 @@ pair<bool, Result> first_move(Game &game, State &state) {
 
     int idx = -1;
     long long m = 1e18;
+    priority_queue<long long> q;
     for (int i = 0; i < game.edge.size(); ++i) {
         auto &e = game.edge[i];
-        long long sum = 0;
         for (auto &v: game.mine) {
             long long x = min(dist[e.from][v], dist[e.to][v]);
-            sum += x * x;
+            q.push(x);
+            if (q.size() > 3) q.pop();
+        }
+        long long sum = 0;
+        while (!q.empty()) {
+            sum += q.top() * q.top();
+            q.pop();
         }
         if (sum < m) {
             m = sum;
