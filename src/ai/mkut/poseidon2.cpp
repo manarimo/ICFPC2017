@@ -92,8 +92,8 @@ struct Result {
     State state;
 };
 
-void connectivity(Game &game, vector<vector<int> >& es, vector<double> &conn, double p, int mine, int site, set<int> visited, int depth, Edge& newEdge, int punterId) {
-    if (depth <= 0) return;
+void connectivity(Game &game, vector<vector<int> >& es, vector<double> &conn, double p, int mine, int site, set<int> visited, int limit, Edge& newEdge, int punterId) {
+    if (p < limit) return;
     if (visited.find(site) != visited.end()) return;
     queue<int> q; q.push(site);
     map<int, double> newSites;
@@ -125,7 +125,7 @@ double score(Game &game, vector<vector<int> >& dist, vector<vector<int> >& es, E
     for (int i = 0; i < game.mines; i++) {
         int mine = game.mine[i];
         vector<double> conn(game.n);
-        connectivity(game, es, conn, 1, mine, mine, set<int>(), 5, newEdge, punterId);
+        connectivity(game, es, conn, 1, mine, mine, set<int>(), 0.01, newEdge, punterId);
         //for (int j = 0; j < game.n; j++) cerr << conn[j] << " "; cerr << endl;
         for (int j = 0; j < game.n; j++) {
             s += conn[j] * dist[i][j] * dist[i][j];
