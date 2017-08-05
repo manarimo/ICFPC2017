@@ -36,6 +36,8 @@ enum Command {
     END
 };
 
+map<int, int> is_mine;
+
 istream &operator>>(istream &is, Game &g) {
     is >> g.punter >> g.punter_id >> g.n >> g.mines;
     g.mine.resize(g.mines);
@@ -107,14 +109,18 @@ map<long long, int> game_freq;
 map<long long, UCBnode> game_to_node;
 
 // get candidate moves
-vector<int> get_candidate(const Game &game) {
-    vector<int> vacant_edge;
+vector<int> get_candidate(const Game &game, int turn) {
+    vector<int> vacant_edge, cand;
     for (int i = 0; i < game.edge.size(); ++i) {
         if (game.edge[i].owner == -1) {
             vacant_edge.push_back(i);
+        } else if (game.edge[i].owner == (game.punter_id + turn) % game.punter
+                   || is_mine[game.edge[i].from] || is_mine[game.edge[i].to]) {
+            cand.push_back(i);
         }
     }
-    return vacant_edge;
+    if (cand.empty()) return vacant_edge;
+    return cand;
 }
 
 const int INF = static_cast<const int>(1e9);
@@ -173,7 +179,7 @@ long long calc_score(const Game &game) {
 
 long long random_play(const Game &game, int turn) {
     auto edge = game.edge;
-    auto cand = get_candidate(game);
+    auto cand = get_candidate(game, turn);
     random_shuffle(cand.begin(), cand.end());
     for (int e: cand) {
         edge[e].owner = (game.punter_id + turn++) % game.punter;
@@ -198,7 +204,7 @@ long long uct_search(Game &game, int turn) {
     double best = turn == 0 ? -1 : 1;
 
     // find the best move so far
-    for (auto &e : get_candidate(game)) {
+    for (auto &e : get_candidate(game, turn)) {
         if (!v.ch[e].cnt) {
             idx = e;
             break;
@@ -231,8 +237,9 @@ long long uct_search(Game &game, int turn) {
 }
 
 Result search(Game &game, int playout) {
-    game_to_node.clear();
-    game_freq.clear();
+    for (auto &m: game.mine) {
+        is_mine[m] = 1;
+    }
 
     long long hash = hash_edge(game.edge);
     UCBnode &root = game_to_node[hash];
@@ -240,7 +247,7 @@ Result search(Game &game, int playout) {
 
     int idx = -1;
     double best = -1;
-    for (auto &e : get_candidate(game)) {
+    for (auto &e : get_candidate(game, 0)) {
         double ucb1 = calc_ucb(root.ch[e].ex, root.ch[e].cnt, root.cnt);
         if (best >= ucb1) continue;
         best = ucb1, idx = e;
