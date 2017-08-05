@@ -51,7 +51,7 @@ istream &operator>>(istream &is, Game &g) {
 ostream &operator<<(ostream &os, const Game &g) {
     os << g.punter << endl << g.punter_id << endl << g.n << endl << g.mines << endl;
     for (int i = 0; i < g.mines; ++i) {
-        os << g.mine[i] << (i == g.mines - 1) ? "": " ";
+        os << g.mine[i] << (i == g.mines - 1 ? "": " ");
     }
     os << endl << g.m << endl;
     for (int i = 0; i < g.m; ++i) {
@@ -123,7 +123,7 @@ ostream &operator<<(ostream &os, const State &s) {
     os << n << '\n';
     for (int i = 0; i < n; ++i) {
         cout << n;
-        for (int j = 0; j < n; ++i) {
+        for (int j = 0; j < n; ++j) {
             os << ' ' << s.dist[i][j];
         }
         cout << '\n';
