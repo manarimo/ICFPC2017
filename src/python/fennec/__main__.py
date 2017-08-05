@@ -93,7 +93,7 @@ def main():
         ai_commits += args.ais.split(',')
     tags = tag_names()
     to_sample = list(tags.values()) if args.only_tagged else list_ais()
-    ai_commits += random.sample(to_sample, args.random_ai_num)
+    ai_commits += random.choices(to_sample, k=args.random_ai_num)
     ai_commands = [ai_command(tags.get(commit, commit)) for commit in ai_commits]
     for i in range(args.repeat):
         print("match #{}".format(i + 1))
