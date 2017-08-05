@@ -106,7 +106,7 @@ void connectivity(Game &game, vector<vector<Edge> >& es, vector<double> &conn, d
         for (int i = 0; i < es[x].size(); i++) {
             if (es[x][i].owner == game.punter_id || (x == newEdge.from && es[x][i].to == newEdge.to) || (x == newEdge.to && es[x][i].to == newEdge.from)) {
                 q.push(es[x][i].to);
-            } else {
+            } else if (es[x][i].owner == -1) {
                 newSites.push_back(es[x][i].to);
             }
         }
@@ -121,7 +121,7 @@ double score(Game &game, vector<vector<int> >& dist, vector<vector<Edge> >& es, 
     for (int i = 0; i < game.mines; i++) {
         int mine = game.mine[i];
         vector<double> conn(game.n);
-        connectivity(game, es, conn, 1, mine, mine, set<int>(), 3, newEdge);
+        connectivity(game, es, conn, 1, mine, mine, set<int>(), 8, newEdge);
         //for (int j = 0; j < game.n; j++) cerr << conn[j] << " "; cerr << endl;
         for (int j = 0; j < game.n; j++) {
             s += conn[j] * dist[i][j] * dist[i][j];
