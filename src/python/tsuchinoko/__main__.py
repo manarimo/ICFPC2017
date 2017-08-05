@@ -38,9 +38,6 @@ def tag_names():
     out_lines = out.splitlines()
     for i in range(1, len(out_lines), 2):
         names[out_lines[i - 1]] = out_lines[i]
-    print(out)
-    print(out_lines)
-    print(names)
     return names
 
 def ruleset(ruleset_str):
@@ -48,10 +45,12 @@ def ruleset(ruleset_str):
         return []
     return ruleset_str.strip().split(',')
 
-REPEAT = 3
-NUM_PLAYERS = [2, 4]
-MAPS = ["map/sample.json", "map/lambda.json"]
+REPEAT = 10
+NUM_PLAYERS = [2, 4, 8]
+MAPS = ["lambda", "randomMedium", "randomSparse", "rand1", "rand3"]
 RANDOM_AI = "6758e6b36e9b185501ea5d2731b98a5f396f2c67"
+
+BENCHMARK_VERSION = 1
 
 def main():
     print(ROOT_DIR)
@@ -61,17 +60,30 @@ def main():
     parser.add_argument("--ai", type=str, help="AI commit hash/tag")
     parser.add_argument("--ruleset", type=ruleset, nargs='?', help="comma separated additional rule set. if empty, rule set will be initial one. currently supported by zeus: x1=futures.")
     args = parser.parse_args()
-    
     tags = tag_names()
 
+    ai_commit = tags.get(args.ai, args.ai)
+    log = {"ai": args.ai, "ai_commit": ai_commit, "version": BENCHMARK_VERSION, "performances": []}
     for punters in NUM_PLAYERS:
-        ai_commits = [args.ai] + [RANDOM_AI] * (punters - 1)
-        ai_commands = [ai_command(tags.get(commit, commit)) for commit in ai_commits]
+        ai_commits = [ai_commit] + [RANDOM_AI] * (punters - 1)
+        ai_commands = [ai_command(commit) for commit in ai_commits]
         for map in MAPS:
+            print("punters: {}, map: {}".format(punters, map))
+            total_score = 0
+            scores = []
             for i in range(REPEAT):
-                print("punters: {}, map: {}, i: {}".format(punters, map, i))
-                score = exe(Path(map), ai_commands, args.ruleset)
+                score = exe(Path("map/{}.json".format(map)), ai_commands, args.ruleset)
+                scores.append(score)
+                total_score += score
                 print("Score: {}".format(score))
+            print("Total Score: {}".format(total_score))
+            testcase_name = "{}-{}".format(map, punters)
+            log["performances"].append({"name": testcase_name, "total": total_score, "scores": scores})
+    log_string = json.dumps(log)
+    filename = "report-{}-{}.json".format(args.ai, int(time.time() * 10 ** 6))
+    log_path = Path(LOG_DIR / filename)
+    with log_path.open("wb") as f:
+        f.write(log_string.encode("utf-8"))
 
 if __name__ == '__main__':
     main()
