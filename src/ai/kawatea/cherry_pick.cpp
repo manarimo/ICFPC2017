@@ -206,7 +206,7 @@ void init() {
             }
         }
         
-        order.push_back(make_pair(-connected, make_pair(dist[last], mine)));
+        order.push_back(make_pair(-connected, make_pair(-dist[last], mine)));
     }
     
     sort(order.begin(), order.end());
