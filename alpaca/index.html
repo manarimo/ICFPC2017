@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>アルパカだよぉ</title>
+</head>
+<body>
+<div id="content">
+    <visualizer></visualizer>
+</div>
+<script type="text/javascript" src="riot+compiler.min.js"></script>
+<script type="riot/tag" src="visualizer.tag"></script>
+<script type="riot/tag" src="board.tag"></script>
+<script>
+    riot.mount('*');
+</script>
+<style>
+    #content {
+        width: 100%;
+        height: 1080px;
+        position: relative;
+    }
+    #content::after {
+        content: " ";
+        background-image: url('/alpaca.jpg');
+        opacity: 0.2;
+        z-index: -1;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+    }
+</style>
+</body>
+</html>

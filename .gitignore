@@ -1,3 +1,6 @@
 /src/ai/yuusti/CMakeLists.txt
 /src/ai/yuusti/cmake-build-debug/
 /src/ai/yuusti/.idea/
+*.pid
+*~
+alpaca/alpaca

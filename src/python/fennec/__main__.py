@@ -44,12 +44,14 @@ def ai_command(commit):
 
 def tag_names():
     names = dict()
-    for commit in list_ais():
-        name_file = Path(Path("/var/ai/") / commit / "tag_name")
-        if name_file.exists():
-            with name_file.open() as f:
-                name = f.read().strip()
-            names[name] = commit
+    tag_script_path = Path(ROOT_DIR / "bin" / "get_git_tags.sh")
+    out = subprocess.check_output(["bash", str(tag_script_path)]).decode()
+    out_lines = out.splitlines()
+    for i in range(1, len(out_lines), 2):
+        names[out_lines[i - 1]] = out_lines[i]
+    print(out)
+    print(out_lines)
+    print(names)
     return names
 
 
@@ -90,8 +92,9 @@ def main():
     if args.ais is not None:
         ai_commits += args.ais.split(',')
     tags = tag_names()
-    to_sample = tags.values() if args.only_tagged else list_ais()
-    ai_commits += random.sample(to_sample, args.random_ai_num)
+    to_sample = list(tags.values()) if args.only_tagged else list_ais()
+    for i in range(args.random_ai_num):
+        ai_commits.append(random.choice(to_sample))
     ai_commands = [ai_command(tags.get(commit, commit)) for commit in ai_commits]
     for i in range(args.repeat):
         print("match #{}".format(i + 1))
