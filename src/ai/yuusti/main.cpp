@@ -185,7 +185,9 @@ long long random_play(const Game &game, int turn) {
     auto edge = game.edge;
     auto cand = get_candidate(game, turn);
     random_shuffle(cand.begin(), cand.end());
+    int cnt = 0;
     for (int e: cand) {
+        if (++cnt > 1) break;
         edge[e].owner = (game.punter_id + turn++) % game.punter;
     }
 
