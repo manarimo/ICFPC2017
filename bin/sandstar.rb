@@ -81,16 +81,28 @@ END
   end
 end
 
-class State < Struct.new(:my_id, :punters, :map, :app_state)
+class State < Struct.new(:my_id, :punters, :map, :settings, :app_state)
   def self.from_json(json)
-    self.new(json['punter'], json['punters'], Map.from_json(json['map']), json['app_state'])
+    settings = {}
+    if json.key?('settings')
+      settings = json['settings']
+    end
+    self.new(json['punter'], json['punters'], Map.from_json(json['map']), settings, json['app_state'])
   end
 
   def to_kyopro
+    settings_list = []
+    settings.each do |key, value|
+      if value
+        settings_list.push(key)
+      end
+    end
     <<"END"
 #{punters}
 #{my_id}
 #{map.to_kyopro}
+#{settings_list.size}
+#{settings_list.join(' ')}
 #{app_state || ''}
 END
   end
@@ -100,6 +112,7 @@ END
         punter: my_id,
         punters: punters,
         map: map.to_hash,
+        settings: settings,
         app_state: app_state
     }
   end
@@ -200,10 +213,17 @@ Open3.popen3(ARGV[0]) do |stdin, stdout, stderr|
     stdin.puts 'INIT'
     stdin.puts obj.to_kyopro
     stdin.close
+    num_futures = stdout.gets.to_i
+    futures = []
+    for i in 0...num_futures
+      source, target = stdout.gets.split().map(&:to_i)
+      futures.push({source: source, target: target})
+    end
     buf = stdout.read
     obj.app_state = buf
     payload = {
       ready: obj.my_id,
+      futures: futures,
       state: obj.to_hash
     }
     print_json(STDOUT, payload)
