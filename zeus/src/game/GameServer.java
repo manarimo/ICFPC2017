@@ -76,6 +76,9 @@ public class GameServer {
         scores = new ArrayList<>();
         this.settings = settings;
         futures = new ArrayList<>();
+        for (int i = 0; i < ais.size(); i++) {
+            futures.add(new ArrayList<>());
+        }
         System.err.println("Server initialized.");
     }
 
