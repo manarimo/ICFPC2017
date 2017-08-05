@@ -11,6 +11,7 @@ ALPACA_LINK_TEMPLATE = """\
 <head>
     <title></title>
     <meta charset="utf-8">
+    <meta http-equiv="refresh" content="URL=http://alpaca.adlersprung.osak.jp/index.html#{json_name}">
 </head>
 <body>
 <script>
