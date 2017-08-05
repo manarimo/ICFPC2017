@@ -7,6 +7,7 @@ cd "${GOPATH}"
 if [ -f ./alpaca.pid ]; then
   kill -9 $(cat ./alpaca.pid) || true
   rm ./alpaca.pid
+  sleep 5
 fi
 go build
 
