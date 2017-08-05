@@ -125,7 +125,7 @@ double score(Game &game, vector<vector<int> >& dist, vector<vector<int> >& es, v
         int mine = game.mine[i];
         vector<double> conn(game.n);
         set<int> visited;
-        connectivity(game, es, danger, conn, 1, mine, mine, visited, 0.01, newEdge, punterId);
+        connectivity(game, es, danger, conn, 1, mine, mine, visited, 1e-4, newEdge, punterId);
         //for (int j = 0; j < game.n; j++) cerr << conn[j] << " "; cerr << endl;
         for (int j = 0; j < game.n; j++) {
             s += conn[j] * dist[i][j] * dist[i][j];
@@ -179,26 +179,26 @@ Result move(Game &game, State &state) {
     int maxIdx = -1;
 
     vector<double> noDanger(game.m, 0);
-    vector<double> danger(game.m, 0);
-    for (int p = 0; p < game.punter; p++) {
-        if (p == game.punter_id) continue;
-        vector<double> pDanger(game.m);
-        double sumDanger = 0;
-        for (int i = 0; i < game.m; i++) {
-            if (game.edge[i].owner == -1) {
-                double s = score(game, state.dist, es, noDanger, game.edge[i], p);
-                sumDanger += s * s;
-                pDanger[i] = s * s;
-            }
-        }
-        for (int i = 0; i < game.m; i++) {
-            danger[i] = 1 - (1 - danger[i]) * (1 - pDanger[i] / sumDanger);
-        }
-    }
+//    vector<double> danger(game.m, 0);
+//    for (int p = 0; p < game.punter; p++) {
+//        if (p == game.punter_id) continue;
+//        vector<double> pDanger(game.m);
+//        double sumDanger = 0;
+//        for (int i = 0; i < game.m; i++) {
+//            if (game.edge[i].owner == -1) {
+//                double s = score(game, state.dist, es, noDanger, game.edge[i], p);
+//                sumDanger += s * s;
+//                pDanger[i] = s * s;
+//            }
+//        }
+//        for (int i = 0; i < game.m; i++) {
+//            danger[i] = 1 - (1 - danger[i]) * (1 - pDanger[i] / sumDanger);
+//        }
+//    }
 
     for (int i = 0; i < game.m; i++) {
         if (game.edge[i].owner == -1) {
-            double s = score(game, state.dist, es, danger, game.edge[i], game.punter_id);
+            double s = score(game, state.dist, es, noDanger, game.edge[i], game.punter_id);
             //cerr << i << ":" << s << endl;
             if (maxScore < s) {
                 maxScore = s;
