@@ -241,7 +241,7 @@ int main() {
     Settings settings;
     switch (state_map.find(command)->second) {
         case HANDSHAKE:
-            cout << "random" << endl;
+            cout << "poseidon" << endl;
             break;
         case INIT:
             cin >> game >> settings;
