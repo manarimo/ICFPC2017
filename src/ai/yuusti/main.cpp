@@ -2,7 +2,7 @@
 
 using namespace std;
 
-const int create_node_count = 20;    // required count to create a new node
+const int create_node_count = 2;    // required count to create a new node
 const int playout_count = 10000;        // times of playout
 double C = 1.2;
 
@@ -105,10 +105,9 @@ struct UCBchild {
 
 struct UCBnode {
     map<int, UCBchild> ch;
-    double ex;
     int cnt;
 
-    UCBnode() : ex(0), cnt(0) {}
+    UCBnode() : cnt(0) {}
 };
 
 map<long long, int> game_freq;
@@ -208,7 +207,7 @@ double mt_rand() {
     return rand();
 }
 
-long long random_play(const Game &game, int turn) {
+vector<long long> random_play(const Game &game, int turn) {
     auto edge = game.edge;
     auto cand = get_candidate(game, turn);
     // 隣接辺からランダム
@@ -234,25 +233,27 @@ long long random_play(const Game &game, int turn) {
                 q.emplace(mt_rand(), i);
             }
         }
-
     }
 
-    // score for our punter
-    return calc_score(game, edge, 0);
+    // score for punters
+    vector<long long> result;
+    for (int i = 0; i < game.punter; ++i) {
+        result.push_back(calc_score(game, edge, i));
+    }
+    return result;
 }
 
-long long uct_search(Game &game, int turn) {
+vector<long long> uct_search(Game &game, int turn) {
     long long hash_value = hash_edge(game.edge);
     int &cnt = game_freq[hash_value];
     if (cnt < create_node_count) {
         ++cnt;
-        long long res = random_play(game, turn);
-        return res;
+        return random_play(game, turn);
     }
 
     UCBnode &v = game_to_node[hash_value];
     int idx = -1;
-    double best = turn == 0 ? -1 : 1;
+    double best = -1;
 
     // find the best move so far
     for (auto &e : get_candidate(game, turn)) {
@@ -267,16 +268,21 @@ long long uct_search(Game &game, int turn) {
         }
     }
 
-    if (idx < 0) return calc_score(game, turn);
+    if (idx < 0) {
+        vector<long long> result;
+        for (int i = 0; i < game.punter; ++i) {
+            result.push_back(calc_score(game, i));
+        }
+        return result;
+    }
     game.edge[idx].owner = (game.punter_id + turn) % game.punter;
-    long long res = uct_search(game, (turn + 1) % game.punter);
+    // This res should be the score of the player playing the turn
+    vector<long long> res = uct_search(game, (turn + 1) % game.punter);
     game.edge[idx].owner = -1;
 
     // propagate
-    v.ch[idx].ex = ((v.ch[idx].ex * v.ch[idx].cnt) + res) / (v.ch[idx].cnt + 1);
+    v.ch[idx].ex = ((v.ch[idx].ex * v.ch[idx].cnt) + res[turn]) / (v.ch[idx].cnt + 1);
     ++v.ch[idx].cnt;
-
-    v.ex = ((v.ex * v.cnt) + res) / (v.cnt + 1);
     ++v.cnt;
 
     return res;
