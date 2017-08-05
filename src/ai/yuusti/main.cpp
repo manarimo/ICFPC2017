@@ -3,7 +3,7 @@
 using namespace std;
 
 const int create_node_count = 2;    // required count to create a new node
-const int playout_count = 10000;        // times of playout
+const int playout_count = 100000;        // times of playout
 double C = 1.2;
 
 
@@ -150,10 +150,6 @@ vector<int> get_candidate(const Game &game, int turn, bool all = false) {
         }
     }
     if (all || cand.empty()) return rest;
-    shuffle(rest.begin(), rest.end(), mt);
-    for (int i = 0; i < min(game.edge.size() / 10, rest.size()); ++i) {
-        cand.push_back(rest[i]);
-    }
     return cand;
 }
 
