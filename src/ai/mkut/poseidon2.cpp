@@ -92,7 +92,7 @@ struct Result {
     State state;
 };
 
-void connectivity(Game &game, vector<vector<int> >& es, vector<double> &conn, double p, int mine, int site, set<int> visited, int limit, Edge& newEdge, int punterId) {
+void connectivity(Game &game, vector<vector<int> >& es, vector<double> &conn, double p, int mine, int site, set<int>& visited, double limit, Edge& newEdge, int punterId) {
     if (p < limit) return;
     if (visited.find(site) != visited.end()) return;
     queue<int> q; q.push(site);
@@ -110,13 +110,12 @@ void connectivity(Game &game, vector<vector<int> >& es, vector<double> &conn, do
             if (edge.owner == punterId || (x == newEdge.from && edgeTo == newEdge.to) || (x == newEdge.to && edgeTo == newEdge.from)) {
                 q.push(edgeTo);
             } else if (edge.owner == -1) {
-                newSites[edgeTo] += 1 / game.punter; // * danger[es[x][i]];
-                newSites[edgeTo] = max(1., newSites[edgeTo]);
+                newSites[edgeTo] = 1 - (1 - newSites[edgeTo]) * (1 - 1. / game.punter); // * danger[es[x][i]];
             }
         }
     }
     for (map<int, double>::iterator it = newSites.begin(); it != newSites.end(); it++) {
-        connectivity(game, es, conn, p * it->second, mine, it->first, visited, depth - 1, newEdge, punterId);
+        connectivity(game, es, conn, p * it->second, mine, it->first, visited, limit, newEdge, punterId);
     }
 }
 
@@ -125,7 +124,8 @@ double score(Game &game, vector<vector<int> >& dist, vector<vector<int> >& es, E
     for (int i = 0; i < game.mines; i++) {
         int mine = game.mine[i];
         vector<double> conn(game.n);
-        connectivity(game, es, conn, 1, mine, mine, set<int>(), 0.01, newEdge, punterId);
+        set<int> visited;
+        connectivity(game, es, conn, 1, mine, mine, visited, 0.01, newEdge, punterId);
         //for (int j = 0; j < game.n; j++) cerr << conn[j] << " "; cerr << endl;
         for (int j = 0; j < game.n; j++) {
             s += conn[j] * dist[i][j] * dist[i][j];
