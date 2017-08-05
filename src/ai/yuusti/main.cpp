@@ -128,6 +128,7 @@ vector<int> get_candidate(const Game &game, int turn, bool all = false) {
     for (int i = 0; i < game.edge.size(); ++i) {
         if (game.edge[i].owner != -1) {
             visited[game.edge[i].from] = visited[game.edge[i].to] = 1;
+
         }
     }
     for (int i = 0; i < game.edge.size(); ++i) {
@@ -139,8 +140,11 @@ vector<int> get_candidate(const Game &game, int turn, bool all = false) {
             }
         }
     }
-    if (cand.empty()) return rest;
-    if (all) cand.insert(cand.end(), rest.begin(), rest.end());
+    if (all || cand.empty()) return rest;
+    shuffle(rest.begin(), rest.end(), mt_rand);
+    for (int i = 0; i < min(5, rest.size()); ++i) {
+        cand.push_back(rest[i]);
+    }
     return cand;
 }
 
