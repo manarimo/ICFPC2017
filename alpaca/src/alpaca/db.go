@@ -1,4 +1,4 @@
-package main
+package alpaca
 
 import (
 	"database/sql"
