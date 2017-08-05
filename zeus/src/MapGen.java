@@ -9,9 +9,9 @@ import java.util.Random;
 
 public class MapGen {
     public static void main(String[] args) throws IOException {
-        final int n = 10;
-        final double pRiver = 0.6;
-        final double pMine = 0.08;
+        final int n = 15;
+        final double pRiver = 0.7;
+        final double pMine = 0.1;
         final Random random = new Random();
         final Map map = new Map();
         map.sites = new ArrayList<>();
