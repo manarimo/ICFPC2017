@@ -279,12 +279,17 @@ public class GameServer {
     private void setTimeout(final Process exec, final int waitSecond) {
         new Thread(() -> {
             try {
+                long l = System.currentTimeMillis();
                 exec.waitFor(waitSecond, TimeUnit.SECONDS);
                 if (exec.isAlive()) {
                     System.err.println("Time out!!!");
                     exec.destroy();
+                } else {
+                    long l2 = System.currentTimeMillis();
+                    System.err.println("time: " + (l2-l));
                 }
             } catch (InterruptedException e) {
+                System.err.println("err");
             }
         }).start();
     }
