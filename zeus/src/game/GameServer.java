@@ -138,14 +138,11 @@ public class GameServer {
             setTimeout(exec, 1);
 
 
+            Move move = null;
             try {
                 final GameplayResponse response = JsonUtil.read(inputStream, GameplayResponse.class);
-                handle(response.toMove(), punterId);
+                move = response.toMove();
                 states.set(punterId, response.state);
-                int score = score(punterId);
-                scores.add(score);
-                System.err.println("OK");
-                System.err.println(punterId + " " + score);
             } catch (final Exception e) {
                 System.err.println("ERROR");
                 final InputStream errorStream = exec.getErrorStream();
@@ -154,6 +151,11 @@ public class GameServer {
                     System.err.println(scanner.nextLine());
                 }
             }
+            handle(move, punterId);
+            int score = score(punterId);
+            scores.add(score);
+            System.err.println("OK");
+            System.err.println(punterId + " " + score);
         }
 
         // 3. Scoring
