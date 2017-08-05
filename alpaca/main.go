@@ -49,7 +49,9 @@ func listLogsHandler(w http.ResponseWriter, r *http.Request) {
 
 	logs := make([]string, len(files))
 	for _, f := range files {
-		logs = append(logs, f.Name())
+		if !strings.HasSuffix(f.Name(), "meta.json") {
+			logs = append(logs, f.Name())
+		}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
