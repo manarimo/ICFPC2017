@@ -110,7 +110,7 @@ istream &operator>>(istream &is, State &s) {
     is >> n;
     s.dist.resize(n);
     for (int i = 0; i < n; ++i) {
-        s.dist.resize(n);
+        s.dist[i].resize(n);
         for (int j = 0; j < n; ++j) {
             is >> s.dist[i][j];
         }
