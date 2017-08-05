@@ -95,6 +95,7 @@ def main():
     parser.add_argument("--do-all", action="store_true")
     parser.add_argument("--only-tagged", action="store_true", help="if --do-all is given. use only ais with tagged. if --do-all is absent, random sampling is done from tagged")
     parser.add_argument("--ais", type=str, help="comma separated AI commit hashes")
+    parser.add_argument("--duplicate", type=int, default=1, help="the number of instances for each AIs.")
     parser.add_argument("--random-ai-num", type=int, default=0, help="the number of AIs that will be randomly added as participants")
     parser.add_argument("--map", type=str, nargs='?', help="map json. if absent, randomly selected from ./map")
     parser.add_argument("--repeat", type=int, default=1, help="the number of match to do. ai order is shuffled")
@@ -116,6 +117,7 @@ def main():
     for i in range(args.random_ai_num):
         ai_commits.append(random.choice(to_sample))
     ai_commands = [ai_command(tags.get(commit, commit)) for commit in ai_commits]
+    ai_commands = ai_commands * args.duplicate
     for i in range(args.repeat):
         print("match #{}".format(i + 1))
         exe(map_path, ai_commands, args.ruleset)
