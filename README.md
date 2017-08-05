@@ -9,7 +9,7 @@
 - Yuki Kawata
 
 ## Our strategy
-Main AI is src/ai/kawatea/cherry_pick.cpp. It splits the game into three phase:
+Main AI is src/ai/kawatea/cherry_pick.cpp. It splits the game into three phases:
 
 1. First phase: picks rivers that are located near from mines. It is not only to maximize the chance to get as many
    mines as possible, but also to block other players from taking high-efficiency rivers.
