@@ -44,12 +44,10 @@ def ai_command(commit):
 
 def tag_names():
     names = dict()
-    for commit in list_ais():
-        name_file = Path(Path("/var/ai/") / commit / "tag_name")
-        if name_file.exists():
-            with name_file.open() as f:
-                name = f.read().strip()
-            names[name] = commit
+    tag_script_path = Path(ROOT_DIR / "bin" / "get_git_tags.sh")
+    out_lines = subprocess.check_output(["bash", str(tag_script_path)]).splitlines()
+    for i in range(0, len(out_lines), 2):
+        names[out_lines[i]] = out_lines[i + 1]
     return names
 
 
