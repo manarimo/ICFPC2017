@@ -114,7 +114,8 @@ vector<int> get_candidate(const Game &game, int turn) {
     for (int i = 0; i < game.edge.size(); ++i) {
         if (game.edge[i].owner == -1) {
             vacant_edge.push_back(i);
-        } else if (game.edge[i].owner == (game.punter_id + turn) % game.punter
+        }
+        if (game.edge[i].owner == (game.punter_id + turn) % game.punter
                    || is_mine[game.edge[i].from] || is_mine[game.edge[i].to]) {
             cand.push_back(i);
         }
