@@ -35,7 +35,8 @@ def exe(map_path: Path, ai_commands, ruleset=None):
     cmd += ai_commands
     print(cmd)
     out = subprocess.check_output(cmd)
-    LOG_DIR.mkdir()
+    if not LOG_DIR.exists():
+        LOG_DIR.mkdir()
     filename = "{}.json".format(int(time.time() * 10 ** 6))
     log_path = Path(LOG_DIR / filename)
     with log_path.open("wb") as f:
