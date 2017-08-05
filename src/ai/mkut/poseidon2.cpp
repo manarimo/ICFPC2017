@@ -3,6 +3,7 @@
 #include <iostream>
 #include <queue>
 #include <set>
+#include <algorithm>
 
 using namespace std;
 
@@ -91,11 +92,11 @@ struct Result {
     State state;
 };
 
-void connectivity(Game &game, vector<vector<Edge> >& es, vector<double> &conn, double p, int mine, int site, set<int> visited, int depth, Edge& newEdge) {
+void connectivity(Game &game, vector<vector<int> >& es, vector<double> &conn, double p, int mine, int site, set<int> visited, int depth, Edge& newEdge, int punterId) {
     if (depth <= 0) return;
     if (visited.find(site) != visited.end()) return;
     queue<int> q; q.push(site);
-    vector<int> newSites;
+    map<int, double> newSites;
     while (!q.empty()) {
         int x = q.front(); q.pop();
         if (visited.find(x) != visited.end()) {
@@ -104,24 +105,27 @@ void connectivity(Game &game, vector<vector<Edge> >& es, vector<double> &conn, d
         conn[x] += p;
         visited.insert(x);
         for (int i = 0; i < es[x].size(); i++) {
-            if (es[x][i].owner == game.punter_id || (x == newEdge.from && es[x][i].to == newEdge.to) || (x == newEdge.to && es[x][i].to == newEdge.from)) {
-                q.push(es[x][i].to);
-            } else if (es[x][i].owner == -1) {
-                newSites.push_back(es[x][i].to);
+            Edge& edge = game.edge[es[x][i]];
+            int edgeTo = edge.from == x ? edge.to : edge.from;
+            if (edge.owner == punterId || (x == newEdge.from && edgeTo == newEdge.to) || (x == newEdge.to && edgeTo == newEdge.from)) {
+                q.push(edgeTo);
+            } else if (edge.owner == -1) {
+                newSites[edgeTo] += 1 / game.punter; // * danger[es[x][i]];
+                newSites[edgeTo] = max(1., newSites[edgeTo]);
             }
         }
     }
-    for (int i = 0; i < newSites.size(); i++) {
-        connectivity(game, es, conn, p / game.punter, mine, newSites[i], visited, depth - 1, newEdge);
+    for (map<int, double>::iterator it = newSites.begin(); it != newSites.end(); it++) {
+        connectivity(game, es, conn, p * it->second, mine, it->first, visited, depth - 1, newEdge, punterId);
     }
 }
 
-double score(Game &game, vector<vector<int> >& dist, vector<vector<Edge> >& es, Edge& newEdge) {
+double score(Game &game, vector<vector<int> >& dist, vector<vector<int> >& es, Edge& newEdge, int punterId) {
     double s = 0;
     for (int i = 0; i < game.mines; i++) {
         int mine = game.mine[i];
         vector<double> conn(game.n);
-        connectivity(game, es, conn, 1, mine, mine, set<int>(), 5, newEdge);
+        connectivity(game, es, conn, 1, mine, mine, set<int>(), 5, newEdge, punterId);
         //for (int j = 0; j < game.n; j++) cerr << conn[j] << " "; cerr << endl;
         for (int j = 0; j < game.n; j++) {
             s += conn[j] * dist[i][j] * dist[i][j];
@@ -164,11 +168,11 @@ State init(Game &game) {
 
 Result move(Game &game, State &state) {
 
-    vector<vector<Edge> > es(game.n);
+    vector<vector<int> > es(game.n);
     for (int i = 0; i < game.m; i++) {
         Edge &e = game.edge[i];
-        es[e.from].push_back(Edge{e.from, e.to, e.owner});
-        es[e.to].push_back(Edge{e.to, e.from, e.owner});
+        es[e.from].push_back(i);
+        es[e.to].push_back(i);
     }
 
     double maxScore = 0;
@@ -176,7 +180,7 @@ Result move(Game &game, State &state) {
 
     for (int i = 0; i < game.m; i++) {
         if (game.edge[i].owner == -1) {
-            double s = score(game, state.dist, es, game.edge[i]);
+            double s = score(game, state.dist, es, game.edge[i], game.punter_id);
             //cerr << i << ":" << s << endl;
             if (maxScore < s) {
                 maxScore = s;
