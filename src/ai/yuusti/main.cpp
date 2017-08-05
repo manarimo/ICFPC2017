@@ -8,9 +8,9 @@
 
 using namespace std;
 
-const int create_node_count = 20;    // required count to create a new node
+const int create_node_count = 1;    // required count to create a new node
 const int playout_count = 1000;        // times of playout
-double C = 1.1;
+double C = 1.2;
 
 
 struct Edge {
@@ -112,7 +112,7 @@ map<long long, int> game_freq;
 map<long long, UCBnode> game_to_node;
 
 // get candidate moves
-vector<int> get_candidate(const Game &game, int turn) {
+vector<int> get_candidate(const Game &game, int turn, bool all = false) {
     vector<int> vacant_edge, cand;
     for (int i = 0; i < game.edge.size(); ++i) {
         if (game.edge[i].owner == -1) {
@@ -124,6 +124,7 @@ vector<int> get_candidate(const Game &game, int turn) {
         }
     }
     if (cand.empty()) return vacant_edge;
+    if (all) cand.insert(cand.end(), vacant_edge.begin(), vacant_edge.end());
     return cand;
 }
 
@@ -185,9 +186,7 @@ long long random_play(const Game &game, int turn) {
     auto edge = game.edge;
     auto cand = get_candidate(game, turn);
     random_shuffle(cand.begin(), cand.end());
-    int cnt = 0;
     for (int e: cand) {
-        if (++cnt > 1) break;
         edge[e].owner = (game.punter_id + turn++) % game.punter;
     }
 
@@ -216,12 +215,7 @@ long long uct_search(Game &game, int turn) {
             break;
         }
         double ucb = calc_ucb(v.ch[e].ex, v.ch[e].cnt, v.cnt);
-        if (turn == 0) {
-            if (best < ucb) {
-                best = ucb;
-                idx = e;
-            }
-        } else if (best > ucb) {
+        if (best < ucb) {
             best = ucb;
             idx = e;
         }
@@ -254,6 +248,7 @@ Result search(Game &game, int playout) {
     int idx = -1;
     double best = -1;
     for (auto &e : get_candidate(game, 0)) {
+        cerr << game.edge[e].from << ' ' << game.edge[e].to << ' ' << root.ch[e].ex << endl;
         double ucb1 = calc_ucb(root.ch[e].ex, root.ch[e].cnt, root.cnt);
         if (best >= ucb1) continue;
         best = ucb1, idx = e;
