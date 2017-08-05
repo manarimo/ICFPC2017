@@ -52,9 +52,9 @@ def main():
         print("{}: {:.5f}% ({} / {}, draw: {})".format(name.strip(), prob(win, all, draw) * 100, win, nall, draw))
         for opponent in all_names:
             win, lose = kati[(name, opponent)], kati[(opponent, name)]
-            all = win + lose
+            nall = win + lose
             draw = draws[(name, opponent)]
-            nall = all - draw
+            all = nall + draw
             print(" - vs {}: {:.5f}% ({} / {}, draw: {})".format(opponent.strip(), prob(win, all, draw) * 100, win, nall, draw))
 
 
