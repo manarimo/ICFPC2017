@@ -6,5 +6,6 @@
     <info organisation="adlersprung" module="sim" />
     <dependencies>
         <dependency org="com.fasterxml" name="jackson-module-json-org" rev="0.9.1"/>
+        <dependency org="commons-cli" name="commons-cli" rev="1.2"/>
     </dependencies>
 </ivy-module>
