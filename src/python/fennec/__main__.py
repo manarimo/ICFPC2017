@@ -96,7 +96,7 @@ def choice(collection, weights):
         acc += w
         thresh.append(acc)
     r = random.uniform(0, thresh[-1])
-    for i in range(collection):
+    for i in range(len(weights)):
         if thresh[i] <= r <= thresh[i+1]:
             return collection[i]
 
