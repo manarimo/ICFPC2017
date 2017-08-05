@@ -9,7 +9,7 @@
                   stroke-width="2"
                   stroke={this.colors[0]}
                   stroke-dasharray="10, 10"/>
-            <line each={h, i in this.histories} if={i < this.frame}
+            <line each={h, i in this.histories} if={i < this.frame && h.move.claim}
                   riot-x1={this.scaleX(this.siteDict[h.move.claim.source].x)}
                   riot-y1={this.scaleY(this.siteDict[h.move.claim.source].y)}
                   riot-x2={this.scaleX(this.siteDict[h.move.claim.target].x)}
@@ -74,7 +74,11 @@
             this.maxY = Math.max(...this.sites.map((s) => s.y));
             this.scaleFactor = Math.min(600 / (this.maxX - this.minX), 600 / (this.maxY - this.minY));
             this.scores = {};
-            this.histories.forEach((h, i) => this.scores[h.move.claim.punter] = h.score);
+            this.histories.forEach((h, i) => {
+                if (h.move.claim) {
+                    this.scores[h.move.claim.punter] = h.score;
+                }
+            });
 
             this.siteDict = {};
             this.sites.forEach((site) => this.siteDict[site.id] = site);
@@ -99,7 +103,9 @@
             this.scores = {};
             for (let i = 0; i < this.frame; ++i) {
                 const h = this.histories[i];
-                this.scores[h.move.claim.punter] = h.score;
+                if (h.move.claim) {
+                    this.scores[h.move.claim.punter] = h.score;
+                }
             }
         });
 
