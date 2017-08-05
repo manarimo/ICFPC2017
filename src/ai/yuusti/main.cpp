@@ -30,7 +30,7 @@ enum Command {
     END
 };
 
-map<int, int> is_mine;
+map<int, int> is_mine, possess;
 
 istream &operator>>(istream &is, Game &g) {
     is >> g.punter >> g.punter_id >> g.n >> g.mines;
@@ -304,9 +304,12 @@ vector<long long> uct_search(Game &game, int turn) {
         }
         return result;
     }
+    long long prv = calc_score(game, turn);
     game.edge[idx].owner = (game.punter_id + turn) % game.punter;
+    long long diff = calc_score(game, turn) - prv;
     // This res should be the score of the player playing the turn
     vector<long long> res = uct_search(game, (turn + 1) % game.punter);
+    res[turn] += diff;
     game.edge[idx].owner = -1;
 
     // propagate
@@ -334,7 +337,7 @@ pair<bool, Result> first_move(Game &game, State &state) {
         for (auto &v: game.mine) {
             long long x = min(dist[e.from][v], dist[e.to][v]);
             q.push(x);
-            if (q.size() > 3) q.pop();
+            if (q.size() > game.mines / game.punter + 1) q.pop();
         }
         long long sum = 0;
         while (!q.empty()) {
