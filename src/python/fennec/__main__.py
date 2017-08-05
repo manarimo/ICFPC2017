@@ -139,6 +139,8 @@ def sample_ais(n):
         weight = aged_penalty * predictability_penalty * rating_penalty
         weights.append(weight)
         print(tup, weight, aged_penalty, predictability_penalty, rating_penalty)
+    print(tag_tuples)
+    print(weights)
     return list(choice(tag_tuples, weights))
 
 
