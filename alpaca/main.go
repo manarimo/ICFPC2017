@@ -3,12 +3,14 @@ package main
 import (
 	"os"
 	"io"
-	"path/filepath"
 	"net/http"
 	"encoding/json"
 	"strings"
 	"fmt"
+	"strconv"
 )
+
+var db = OpenConnection()
 
 func staticHandler(w http.ResponseWriter, r *http.Request) {
 	f, err := os.Open("./" + r.URL.Path)
@@ -68,40 +70,36 @@ func loadMeta(path string) (LogSpec, error) {
 }
 
 func listLogsHandler(w http.ResponseWriter, r *http.Request) {
-	files, err := filepath.Glob(getLogDir() + "/*_meta.json")
+	matches, err := db.FetchRecentMatchDatas()
 	if err != nil {
 		w.WriteHeader(404)
 		return
-	}
-
-	logs := make([]LogSpec, 0)
-	for _, f := range files {
-		if strings.HasSuffix(f, "meta.json") {
-			meta, err := loadMeta(f)
-			if err == nil {
-				logs = append(logs, meta)
-			}
-		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	enc := json.NewEncoder(w)
-	enc.Encode(logs)
+	enc.Encode(matches)
 }
 
 func fetchLogHandler(w http.ResponseWriter, r *http.Request) {
 	parts := strings.SplitN(r.URL.Path, "/", 4)
-	fmt.Printf("%v", parts)
-	logFile := getLogDir() + "/" + parts[len(parts)-1] + ".json"
-	f, err := os.Open(logFile)
+	fmt.Printf("%v\n", parts)
+	id, err := strconv.ParseInt(parts[len(parts) - 1], 10, 32)
 	if err != nil {
 		w.WriteHeader(404)
+		w.Write([]byte(err.Error()))
 		return
 	}
-	defer f.Close()
+
+	log, err := db.FindMatchLog(int(id))
+	if err != nil {
+		w.WriteHeader(404)
+		w.Write([]byte(err.Error()))
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	io.Copy(w, f)
+	w.Write([]byte(log))
 }
 
 func main() {

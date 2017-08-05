@@ -5,8 +5,8 @@
             <input type="input" id="filter" onkeyup={updateFilter} />
             <ul>
                 <li each={log in this.filtered(this.logs)}>
-                    <a href="#{log.name}" onclick={change} data-logname={log.name}>{log.name}</a>
-                    <span>({log.players.join(', ')})</span>
+                    <a href="#{log.id}" onclick={change} data-logname={log.id}>{log.id}</a>
+                    <span>({log.names.join(', ')})</span>
                 </li>
             </ul>
         </div>
@@ -48,7 +48,7 @@
         }
 
         filtered() {
-            return this.logs.filter((spec) => spec.name.includes(this.text) || spec.players.some((p) => p.includes(this.text)));
+            return this.logs.filter((spec) => String(spec.id).includes(this.text) || spec.names.some((p) => p.includes(this.text)));
         }
     </script>
 </visualizer>
