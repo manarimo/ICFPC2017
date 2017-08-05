@@ -36,7 +36,7 @@ def main():
         win, all = per_win_agg[name], per_match_agg[name]
         print("{}: {:.5f}% ({} / {})".format(name, win / all, win, all))
         for opponent in all_names:
-            win, lose = kati[(name, opponent)], kati[(opponent, kati)]
+            win, lose = kati[(name, opponent)], kati[(opponent, name)]
             all = win + lose
             print(" - vs {}: {:.5f}% ({} / {})".format(opponent, win / all, win, all))
 
