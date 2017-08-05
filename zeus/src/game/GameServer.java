@@ -81,6 +81,9 @@ public class GameServer {
             futures.add(new ArrayList<>());
         }
         names = new ArrayList<>();
+        for (int i = 0; i < ais.size(); i++) {
+            names.add("noname");
+        }
         System.err.println("Server initialized.");
     }
 
