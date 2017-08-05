@@ -5,6 +5,8 @@ import subprocess
 import itertools
 import time
 import shutil
+import json
+import numpy as np
 
 
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent.parent
@@ -87,6 +89,54 @@ def ruleset(ruleset_str):
     return ruleset_str.strip().split(',')
 
 
+def choice(collection, weights):
+    acc = 0
+    thresh = [0]
+    for w in weights:
+        acc += w
+        thresh.append(acc)
+    r = random.uniform(0, thresh[-1])
+    for i in range(collection):
+        if thresh[i] <= r <= thresh[i+1]:
+            return collection[i]
+
+
+def konoha_scores():
+    konoha_json_path = Path(ROOT_DIR / "konoha_artifacts" / "ratings.json")
+    with konoha_json_path.open() as f:
+        return json.load(f)
+
+
+def win_rate(me, opponent):
+    return 1 / (1 + np.exp(opponent - me))
+
+
+def entropy(p):
+    return -p * np.log2(p) - (1 - p) * np.log2(1 - p)
+
+
+def unpredictability(me, opponent):
+    return entropy(win_rate(me, opponent))
+
+
+def sample_ais(n):
+    tags = list(tag_names().values())
+    weights = []
+    tag_tuples = itertools.combinations(tags, n)
+    ratings = konoha_scores()
+    average_rate = np.average(sc["rating"] for sc in ratings)
+    for tup in tag_tuples:
+        matches = [ratings[name]["match_count"] for name in tup]
+        rates = [ratings[name]["rating"] for name in tup]
+        aged_penalty = np.prod([1 / (50 + c) for c in matches])
+        predictability_penalty = np.prod([unpredictability(*rate_pair) for rate_pair in itertools.combinations(rates, 2)])
+        rating_penalty = win_rate(np.average(rates), average_rate)
+        weight = aged_penalty * predictability_penalty * rating_penalty
+        weights.append(weight)
+        print(tup, weight, aged_penalty, predictability_penalty, rating_penalty)
+    return list(choice(tag_tuples, weights))
+
+
 def main():
     print(ROOT_DIR)
     if LOG_DIR.exists():
@@ -112,10 +162,8 @@ def main():
     ai_commits = []
     if args.ais is not None:
         ai_commits += args.ais.split(',')
+    ai_commits += sample_ais(args.random_ai_num)
     tags = tag_names()
-    to_sample = list(tags.values()) if args.only_tagged else list_ais()
-    for i in range(args.random_ai_num):
-        ai_commits.append(random.choice(to_sample))
     ai_commands = [ai_command(tags.get(commit, commit)) for commit in ai_commits]
     ai_commands = ai_commands * args.duplicate
     for i in range(args.repeat):
