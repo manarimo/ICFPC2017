@@ -323,7 +323,7 @@ pair<bool, Result> first_move(Game &game, State &state) {
             return make_pair(false, Result{});
         }
     }
-    auto &dist = state.dist;
+    auto dist = calc_dist(game);
 
     int idx = -1;
     long long m = 1e18;
