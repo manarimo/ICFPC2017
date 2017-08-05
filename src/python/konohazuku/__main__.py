@@ -49,13 +49,13 @@ def main():
     for name in all_names:
         win, all, draw = per_win_agg[name], per_match_agg[name], per_draw_agg[name]
         nall = all - draw
-        print("{}: {:.5f}% ({} / {}, draw: {})".format(name.strip(), prob(win, all, draw), win, nall, draw))
+        print("{}: {:.5f}% ({} / {}, draw: {})".format(name.strip(), prob(win, all, draw) * 100, win, nall, draw))
         for opponent in all_names:
             win, lose = kati[(name, opponent)], kati[(opponent, name)]
             all = win + lose
             draw = draws[(name, opponent)]
             nall = all - draw
-            print(" - vs {}: {:.5f}% ({} / {}, draw: {})".format(opponent.strip(), prob(win, all, draw), win, nall, draw))
+            print(" - vs {}: {:.5f}% ({} / {}, draw: {})".format(opponent.strip(), prob(win, all, draw) * 100, win, nall, draw))
 
 
 if __name__ == '__main__':
