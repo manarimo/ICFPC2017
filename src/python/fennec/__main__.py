@@ -125,9 +125,13 @@ def sample_ais(n):
     tag_tuples = itertools.combinations(tags, n)
     ratings = konoha_scores()
     average_rate = np.average([sc["rating"] for sc in ratings.values()])
+    dummy = {
+        "match_count": 0,
+        "rating": average_rate
+    }
     for tup in tag_tuples:
-        matches = [ratings[name]["match_count"] for name in tup]
-        rates = [ratings[name]["rating"] for name in tup]
+        matches = [ratings.get(name, dummy)["match_count"] for name in tup]
+        rates = [ratings.get(name, dummy)["rating"] for name in tup]
         aged_penalty = np.prod([1 / (50 + c) for c in matches])
         predictability_penalty = np.prod([unpredictability(*rate_pair) for rate_pair in itertools.combinations(rates, 2)])
         rating_penalty = win_rate(np.average(rates), average_rate)
