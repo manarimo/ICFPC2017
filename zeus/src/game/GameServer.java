@@ -25,11 +25,13 @@ public class GameServer {
     private final List<JsonNode> states;
     private final List<Move> history;
     private final List<Integer> scores;
+    private final Settings settings;
+    private final List<List<Future>> futures;
 
     // siteId of mine -> siteId -> distance
     private final java.util.Map<Integer, java.util.Map<Integer, Integer>> distances;
 
-    public GameServer(final Map map, final List<String> ais) throws IOException {
+    public GameServer(final Map map, final List<String> ais, final Settings settings) throws IOException {
         this.map = map;
         claimedRivers = new HashMap<>();
         for (int i = 0; i < ais.size(); i++) {
@@ -72,13 +74,16 @@ public class GameServer {
             }
         }
         scores = new ArrayList<>();
+        this.settings = settings;
+        futures = new ArrayList<>();
         System.err.println("Server initialized.");
     }
 
     public void run() throws IOException {
+        // 1. Setup
         for (int i = 0; i < ais.size(); i++) {
             System.err.println(String.format("Setting up AI #%d...", i));
-            final SetupRequest request = new SetupRequest(i, ais.size(), map);
+            final SetupRequest request = new SetupRequest(i, ais.size(), map, settings);
 
             final Process exec = Runtime.getRuntime().exec(ais.get(i));
             handshake(exec);
@@ -90,6 +95,9 @@ public class GameServer {
             try {
                 final SetupResponse response = JsonUtil.read(inputStream, SetupResponse.class);
                 states.set(i, response.state);
+                if (settings.futures && response.futures != null) {
+                    futures.get(i).addAll(validateFutures(response.futures));
+                }
                 System.err.println("OK");
             } catch (final Exception e) {
                 System.err.println("ERROR");
@@ -100,6 +108,8 @@ public class GameServer {
                 }
             }
         }
+
+        // 2. Gameplay
         for (int i = 0; i < map.rivers.size(); i++) {
             final int punterId = i % ais.size();
             System.err.println(String.format("Turn #%d AI=%d", i, punterId));
@@ -122,8 +132,10 @@ public class GameServer {
                 handle(response.toMove());
                 states.set(punterId, response.state);
                 history.add(response.toMove());
-                score(punterId);
+                int score = score(punterId);
+                scores.add(score);
                 System.err.println("OK");
+                System.err.println(punterId + " " + score);
             } catch (final Exception e) {
                 System.err.println("ERROR");
                 final InputStream errorStream = exec.getErrorStream();
@@ -133,7 +145,24 @@ public class GameServer {
                 }
             }
         }
+
+        // 3. Scoring
         stop();
+    }
+
+    private List<Future> validateFutures(final List<Future> futures) {
+        if (futures == null) {
+            return Collections.emptyList();
+        }
+        final java.util.Map<Integer, Integer> futureMap = new HashMap<>();
+        for (final Future future : futures) {
+            if (map.mines.contains(future.source) && !map.mines.contains(future.target)) {
+                futureMap.put(future.source, future.target);
+            }
+        }
+        return futureMap.entrySet().stream()
+                .map(entry -> new Future(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
     }
 
     private void handle(final Move move) {
@@ -150,53 +179,51 @@ public class GameServer {
         claimedRivers.get(claim.punter).add(river);
     }
 
-    private void score(int i) {
+    private Integer findFutureTarget(final int punterId, final int mineSiteId) {
+        for (final Future future : futures.get(punterId)) {
+            if (future.source == mineSiteId) {
+                return future.target;
+            }
+        }
+        return null;
+    }
+
+    private int score(final int punterId) {
         int score = 0;
         for (final Integer mineSiteId : map.mines) {
+            Integer futureTarget = null;
+            if (settings.futures) {
+                futureTarget = findFutureTarget(punterId, mineSiteId);
+            }
             final Set<Integer> rests = new HashSet<>(map.sites.stream().map(Site::getId).collect(Collectors.toList()));
             final Queue<Integer> q = new LinkedList<>();
             q.add(mineSiteId);
             rests.remove(mineSiteId);
             while (!q.isEmpty()) {
                 final Integer id = q.remove();
-                score += distances.get(mineSiteId).get(id);
+                final int d = distances.get(mineSiteId).get(id);
+                if (id.equals(futureTarget)) {
+                    score += d * d * d;
+                }
+                score += d * d;
                 for (final River river : map.rivers) {
-                    if (river.target == id && claimedRivers.get(i).contains(river) && rests.contains(river.source)) {
+                    if (river.target == id && claimedRivers.get(punterId).contains(river) && rests.contains(river.source)) {
                         q.add(river.source);
                         rests.remove(river.source);
-                    } else if (river.source == id && claimedRivers.get(i).contains(river) && rests.contains(river.target)) {
+                    } else if (river.source == id && claimedRivers.get(punterId).contains(river) && rests.contains(river.target)) {
                         q.add(river.target);
                         rests.remove(river.target);
                     }
                 }
             }
         }
-        scores.add(score);
+        return score;
     }
 
     private void stop() throws IOException {
         final List<Score> pScores = new ArrayList<>();
         for (int i = 0; i < ais.size(); i++) {
-            int score = 0;
-            for (final Integer mineSiteId : map.mines) {
-                final Set<Integer> rests = new HashSet<>(map.sites.stream().map(Site::getId).collect(Collectors.toList()));
-                final Queue<Integer> q = new LinkedList<>();
-                q.add(mineSiteId);
-                rests.remove(mineSiteId);
-                while (!q.isEmpty()) {
-                    final Integer id = q.remove();
-                    score += distances.get(mineSiteId).get(id);
-                    for (final River river : map.rivers) {
-                        if (river.target == id && claimedRivers.get(i).contains(river) && rests.contains(river.source)) {
-                            q.add(river.source);
-                            rests.remove(river.source);
-                        } else if (river.source == id && claimedRivers.get(i).contains(river) && rests.contains(river.target)) {
-                            q.add(river.target);
-                            rests.remove(river.target);
-                        }
-                    }
-                }
-            }
+            int score = score(i);
             pScores.add(new Score(i, score));
         }
         for (int i = 0; i < ais.size(); i++) {
@@ -214,7 +241,7 @@ public class GameServer {
         for (int i = 0; i < history.size(); i++) {
             states.add(new State(history.get(i), scores.get(i)));
         }
-        System.out.println(objectMapper.writeValueAsString(new Scores(map, ais.size(), states)));
+        System.out.println(objectMapper.writeValueAsString(new Scores(map, settings, ais.size(), futures, states)));
     }
 
     private void handshake(final Process exec) throws IOException {
