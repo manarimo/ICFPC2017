@@ -147,8 +147,8 @@ def sample_ais(n):
     for tup in tag_tuples:
         matches = [ratings.get(name, dummy)["match_count"] for name in tup]
         rates = [ratings.get(name, dummy)["rating"] for name in tup]
-        aged_penalty = np.prod([1 / (50 + c) for c in matches])
-        if min(matches) < 40:
+        aged_penalty = 1.
+        if min(matches) < 50:
             aged_penalty *= 10
         predictability_penalty = np.prod([unpredictability(*rate_pair) for rate_pair in itertools.combinations(rates, 2)])
         rating_penalty = win_rate(np.average(rates), average_rate)
