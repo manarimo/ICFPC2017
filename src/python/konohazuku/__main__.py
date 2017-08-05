@@ -78,6 +78,17 @@ def main():
     with html_dir.open("w") as file:
         file.write(df.to_html())
 
+    artifact_dir = Path(ROOT_DIR / "konoha_artifacts")
+    if not artifact_dir.exists():
+        artifact_dir.mkdir()
+    artifact_path = Path(artifact_dir / "ratings.json")
+    artifact_data = {name: {
+        "rating": name2ratings[name],
+        "match_count": per_match_agg[name]
+    } for name in all_names}
+    with artifact_path.open("w") as f:
+        json.dump(artifact_data, f)
+
 
 if __name__ == '__main__':
     main()
