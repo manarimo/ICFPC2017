@@ -45,7 +45,7 @@ def ai_command(commit):
 def tag_names():
     names = dict()
     tag_script_path = Path(ROOT_DIR / "bin" / "get_git_tags.sh")
-    out = str(subprocess.check_output(["bash", str(tag_script_path)]))
+    out = subprocess.check_output(["bash", str(tag_script_path)]).decode()
     out_lines = out.splitlines()
     for i in range(1, len(out_lines), 2):
         names[out_lines[i - 1]] = out_lines[i]
