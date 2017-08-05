@@ -153,11 +153,27 @@ void input(bool read_state) {
             scanf("%d", &v);
             state.add_mine(v);
         }
+    } else {
+        int num;
+        scanf("%d", &num);
+        
+        for (int i = 0; i < num; i++) {
+            char option[10];
+            scanf("%s", option);
+        }
     }
 }
 
+void output(const vector<pair<int, int>>& futures) {
+    printf("%d", futures.size());
+    for (int i = 0; i < futures.size(); i++) printf(" %d %d", futures[i].first, futures[i].second);
+    puts("");
+    state.output();
+    exit(0);
+}
+
 void output(int edge_id) {
-    if (edge_id != -1) printf("%d\n", edge_id);
+    printf("%d\n", edge_id);
     state.output();
     exit(0);
 }
@@ -198,7 +214,7 @@ void init() {
     sort(order.begin(), order.end());
     for (int i = 0; i < order.size(); i++) state.add_mine(order[i].second.second);
     
-    output(-1);
+    output(vector<pair<int, int>>());
 }
 
 void cherry_pick() {
