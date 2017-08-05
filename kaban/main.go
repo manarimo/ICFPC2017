@@ -63,7 +63,7 @@ func main() {
 	}
 	defer db.Close()
 
-	files, err := filepath.Glob("/var/local/logs/*_meta.json")
+	files, err := filepath.Glob("logs/*_meta.json")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -83,26 +83,24 @@ func main() {
 		log := readLog(logFile)
 		matches = append(matches, Match{
 			metadata: meta,
-			log: log,
+			log:      log,
 		})
 	}
 	fmt.Printf("Done %d\n", len(matches))
 
-	if (false) {
-		fmt.Println("Start inserting player")
-		stmt, err := db.Prepare("INSERT INTO player VALUES (?, ?)")
-		if err != nil {
-			panic(err.Error())
-		}
-		defer stmt.Close()
-
-		for name, _ := range names {
-			if _, err := stmt.Exec(name, nil); err != nil {
-				fmt.Printf("Error: skipping %s due to %s\n", name, err.Error())
-			}
-		}
-		fmt.Println("Done")
+	fmt.Println("Start inserting player")
+	stmt, err := db.Prepare("INSERT IGNORE INTO player VALUES (?, ?)")
+	if err != nil {
+		panic(err.Error())
 	}
+	defer stmt.Close()
+
+	for name, _ := range names {
+		if _, err := stmt.Exec(name, nil); err != nil {
+			fmt.Printf("Error: skipping %s due to %s\n", name, err.Error())
+		}
+	}
+	fmt.Println("Done")
 
 	fmt.Println("Start inserting match")
 	stmt2, err := db.Prepare("INSERT INTO match_log (match_type, log) VALUES (?, ?)")
@@ -137,4 +135,9 @@ func main() {
 		}
 	}
 	fmt.Println("Done")
+
+	for _, file := range files {
+		os.Remove(file)
+		os.Remove(strings.Replace(file, "_meta", "", 1))
+	}
 }
