@@ -80,7 +80,7 @@ func (db *AdlersprungDB) FetchRecentMatchDatas() ([]Match, error) {
 	return matchList, nil
 }
 
-func (db *AdlersprungDB) FindMatchLog(id int) (string, error) {
+func (db *AdlersprungDB) FindMatchLogById(id int) (string, error) {
 	rows, err := db.db.Query("SELECT log FROM match_log WHERE id = ?", id)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -94,5 +94,22 @@ func (db *AdlersprungDB) FindMatchLog(id int) (string, error) {
 		return log, nil
 	} else {
 		return "", fmt.Errorf("Match log of id = %d not found", id)
+	}
+}
+
+func (db *AdlersprungDB) FindMatchLogByTag(tag string) (string, error) {
+	rows, err := db.db.Query("SELECT log FROM match_log WHERE tag = ?", tag)
+	if err != nil {
+		fmt.Println(err.Error())
+		return "", err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var log string
+		rows.Scan(&log)
+		return log, nil
+	} else {
+		return "", fmt.Errorf("Match log of tag = %s not found", tag)
 	}
 }

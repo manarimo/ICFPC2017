@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"regexp"
 	"io"
 	"net/http"
 	"encoding/json"
@@ -82,17 +83,24 @@ func listLogsHandler(w http.ResponseWriter, r *http.Request) {
 	enc.Encode(matches)
 }
 
+func tryFetchLog(key string) (string, error) {
+	if ok, _ := regexp.MatchString("^\\d+$", key); ok {
+		id, err := strconv.ParseInt(key, 10, 32)
+		if err != nil {
+			return "", err
+		}
+
+		return db.FindMatchLogById(int(id))
+	} else {
+		return db.FindMatchLogByTag(key)
+	}
+}
+
 func fetchLogHandler(w http.ResponseWriter, r *http.Request) {
 	parts := strings.SplitN(r.URL.Path, "/", 4)
 	fmt.Printf("%v\n", parts)
-	id, err := strconv.ParseInt(parts[len(parts) - 1], 10, 32)
-	if err != nil {
-		w.WriteHeader(404)
-		w.Write([]byte(err.Error()))
-		return
-	}
-
-	log, err := db.FindMatchLog(int(id))
+	key := parts[len(parts) - 1]
+	log, err := tryFetchLog(key)
 	if err != nil {
 		w.WriteHeader(404)
 		w.Write([]byte(err.Error()))
