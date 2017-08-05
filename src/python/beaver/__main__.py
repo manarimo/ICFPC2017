@@ -1,5 +1,6 @@
 from pathlib import Path
 import json
+import os
 
 
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent.parent
@@ -27,6 +28,7 @@ def process(log_path: Path):
     meta_name = log_path.name.replace(".json", "_meta.json")
     meta_path = Path(LOG_DIR / meta_name)
     metadata = dict()
+    metadata["match_type"] = os.environ["MATCH_TYPE"]
     with log_path.open() as f:
         log_json = json.load(f)
         if "names" in log_json:
