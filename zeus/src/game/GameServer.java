@@ -128,7 +128,7 @@ public class GameServer {
             final GameplayRequest request = new GameplayRequest(new GameplayRequest.Moves(moves), states.get(punterId));
 
             final Process exec = Runtime.getRuntime().exec(ais.get(punterId));
-            handshake(i, exec);
+            handshake(punterId, exec);
             final InputStream inputStream = exec.getInputStream();
             final OutputStream outputStream = exec.getOutputStream();
             JsonUtil.write(outputStream, request);
