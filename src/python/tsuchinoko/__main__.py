@@ -51,7 +51,7 @@ def ruleset(ruleset_str):
 REPEAT = 3
 NUM_PLAYERS = [2, 4]
 MAPS = ["map/sample.json", "map/lambda.json"]
-RANDOM_AI = ""
+RANDOM_AI = "6758e6b36e9b185501ea5d2731b98a5f396f2c67"
 
 def main():
     print(ROOT_DIR)
