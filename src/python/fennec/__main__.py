@@ -120,7 +120,7 @@ def unpredictability(me, opponent):
 
 
 def sample_ais(n):
-    tags = list(tag_names().values())
+    tags = list(tag_names().keys())
     weights = []
     tag_tuples = itertools.combinations(tags, n)
     ratings = konoha_scores()
