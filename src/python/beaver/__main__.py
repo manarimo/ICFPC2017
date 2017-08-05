@@ -17,6 +17,7 @@ ALPACA_LINK_TEMPLATE = """\
 <script>
     window.location.href = "http://alpaca.adlersprung.osak.jp/index.html#{json_name}";
 </script>
+<a href="http://alpaca.adlersprung.osak.jp/index.html#{json_name}">ふわああぁ！いらっしゃぁい！よぉこそぉ↑ジャパリカフェへ～！ (アルパカでビジュアライズする)</a>
 </body>
 </html>
 """
