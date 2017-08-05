@@ -82,7 +82,9 @@
         });
 
         this.on('update', () => {
-            this.refresh(opts);
+            if (this.histories !== opts.state.history) {
+                this.refresh(opts);
+            }
             this.scores = {};
             for (let i = 0; i < this.frame; ++i) {
                 const h = this.histories[i];
