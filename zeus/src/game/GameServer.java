@@ -138,7 +138,7 @@ public class GameServer {
             setTimeout(exec, 1);
 
 
-            Move move = null;
+            Move move = Move.of(new Move.Pass(punterId));
             try {
                 final GameplayResponse response = JsonUtil.read(inputStream, GameplayResponse.class);
                 move = response.toMove();
