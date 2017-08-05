@@ -33,6 +33,8 @@ def process(log_path: Path):
         log_json = json.load(f)
         if "names" in log_json:
             metadata["names"] = log_json["names"]
+        if "tag_names" in log_json:
+            metadata["tag_names"] = log_json["tag_names"]
         raw_scores = [sc["score"] for sc in log_json["scores"]]
         metadata["scores"] = log_json["scores"]
         for sc in metadata["scores"]:

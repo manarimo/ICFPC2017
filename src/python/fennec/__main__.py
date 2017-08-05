@@ -1,3 +1,4 @@
+import json
 from argparse import ArgumentParser
 from pathlib import Path
 import random
@@ -24,7 +25,7 @@ def list_map_paths():
     return list(Path(ROOT_DIR / "map").iterdir())
 
 
-def exe(map_path: Path, ai_commands, ruleset=None):
+def exe(map_path: Path, ai_commands, ruleset=None, tags=None):
     ruleset = ruleset or []
     print("ruleset:", ruleset)
     ruleset_args = ["-{}".format(rule) for rule in ruleset]
@@ -34,12 +35,16 @@ def exe(map_path: Path, ai_commands, ruleset=None):
     cmd.append(str(len(ai_commands)))
     cmd += ai_commands
     print(cmd)
-    out = subprocess.check_output(cmd)
+    out = subprocess.check_output(cmd).decode()
     if not LOG_DIR.exists():
         LOG_DIR.mkdir()
     filename = "{}.json".format(int(time.time() * 10 ** 6))
     log_path = Path(LOG_DIR / filename)
-    with log_path.open("wb") as f:
+    with log_path.open("w") as f:
+        if tags:
+            out_obj = json.loads(out)
+            out_obj["tag_names"] = tags
+            out = json.dumps(out_obj)
         f.write(out)
     print("alpaca link: http://alpaca.adlersprung.osak.jp/index.html#{}".format(filename.replace(".json", "")))
 
@@ -116,11 +121,11 @@ def main():
     to_sample = list(tags.values()) if args.only_tagged else list_ais()
     for i in range(args.random_ai_num):
         ai_commits.append(random.choice(to_sample))
+    ai_commits = ai_commits * args.duplicate
     ai_commands = [ai_command(tags.get(commit, commit)) for commit in ai_commits]
-    ai_commands = ai_commands * args.duplicate
     for i in range(args.repeat):
         print("match #{}".format(i + 1))
-        exe(map_path, ai_commands, args.ruleset)
+        exe(map_path, ai_commands, args.ruleset, ai_commits)
         random.shuffle(ai_commands)
 
 
