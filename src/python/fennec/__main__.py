@@ -124,7 +124,7 @@ def sample_ais(n):
     weights = []
     tag_tuples = itertools.combinations(tags, n)
     ratings = konoha_scores()
-    average_rate = np.average(sc["rating"] for sc in ratings)
+    average_rate = np.average([sc["rating"] for sc in ratings])
     for tup in tag_tuples:
         matches = [ratings[name]["match_count"] for name in tup]
         rates = [ratings[name]["rating"] for name in tup]
