@@ -1,9 +1,12 @@
 from pathlib import Path
 import json
 from collections import Counter
+import elo
+import pandas as pd
 
 
 LOGS_DIR = Path("/var/local/logs/")
+ROOT_DIR = Path(__file__).absolute().parent.parent.parent.parent
 
 
 def prob(win, all, draw):
@@ -45,17 +48,46 @@ def main():
         per_match_agg[names[0]] += 1
         per_match_agg[names[1]] += 1
     all_names = list(per_match_agg.keys())
-    all_names.sort(key=lambda name: prob(per_win_agg[name], per_match_agg[name], per_draw_agg[name]), reverse=True)
+    win_matrix = [[kati[(winner, loser)] for loser in all_names] for winner in all_names]
+    ratings = list(elo.estimate_rating(win_matrix))
+    name2ratings = {name: rating for name, rating in zip(all_names, ratings)}
+    all_names.sort(key=lambda name: name2ratings[name], reverse=True)
+    data_table = []
+    index = []
     for name in all_names:
         win, all, draw = per_win_agg[name], per_match_agg[name], per_draw_agg[name]
         nall = all - draw
-        print("{}: {:.5f}% ({} / {}, draw: {})".format(name.strip(), prob(win, all, draw) * 100, win, nall, draw))
+        header = "{}: Rating: {:.3}, {:.2f}% ({} / {}, draw: {})".format(name.strip(), name2ratings[name], prob(win, all, draw) * 100, win, nall, draw)
+        print(header)
+        index.append(header)
+        row = []
         for opponent in all_names:
             win, lose = kati[(name, opponent)], kati[(opponent, name)]
             nall = win + lose
             draw = draws[(name, opponent)]
             all = nall + draw
-            print(" - vs {}: {:.5f}% ({} / {}, draw: {})".format(opponent.strip(), prob(win, all, draw) * 100, win, nall, draw))
+            column = "{:.2f}% ({} / {}, draw: {})".format(prob(win, all, draw) * 100, win, nall, draw)
+            print(column)
+            row.append(column)
+        data_table.append(row)
+    df = pd.DataFrame(data_table, index=index, columns=index)
+    publish_dir = Path(ROOT_DIR / "reports")
+    if not publish_dir.exists():
+        publish_dir.mkdir()
+    html_dir = publish_dir / "index.html"
+    with html_dir.open("w") as file:
+        file.write(df.to_html())
+
+    artifact_dir = Path(ROOT_DIR / "konoha_artifacts")
+    if not artifact_dir.exists():
+        artifact_dir.mkdir()
+    artifact_path = Path(artifact_dir / "ratings.json")
+    artifact_data = {name: {
+        "rating": name2ratings[name],
+        "match_count": per_match_agg[name]
+    } for name in all_names}
+    with artifact_path.open("w") as f:
+        json.dump(artifact_data, f)
 
 
 if __name__ == '__main__':
