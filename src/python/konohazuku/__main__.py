@@ -31,7 +31,7 @@ def main():
         all_names = meta_json["names"]
         if "scores" not in meta_json:
             continue
-        for sc in meta_json:
+        for sc in meta_json["scores"]:
             punter_rank_scores[all_names[sc["punter"]]].append(sc["rank_score"])
         if len(punter_rank_scores) != 2:
             continue
