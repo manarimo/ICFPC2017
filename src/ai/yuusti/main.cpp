@@ -121,14 +121,17 @@ void buildGraph(const Game &game) {
     }
 }
 
+int get_player_id(int punter_id, int punter, int turn) {
+    return (turn + punter_id) % punter;
+}
+
 // get candidate moves
 vector<int> get_candidate(const Game &game, int turn, bool all = false) {
     vector<int> rest, cand;
     vector<int> visited(game.n);
     for (int i = 0; i < game.edge.size(); ++i) {
-        if (game.edge[i].owner != -1) {
+        if (game.edge[i].owner == get_player_id(game.punter_id, game.punter, turn)) {
             visited[game.edge[i].from] = visited[game.edge[i].to] = 1;
-
         }
     }
     for (int i = 0; i < game.edge.size(); ++i) {
@@ -142,7 +145,7 @@ vector<int> get_candidate(const Game &game, int turn, bool all = false) {
     }
     if (all || cand.empty()) return rest;
     shuffle(rest.begin(), rest.end(), mt_rand);
-    for (int i = 0; i < min(5, rest.size()); ++i) {
+    for (int i = 0; i < min(game.edge.size() / 10, static_cast<const int &>(rest.size())); ++i) {
         cand.push_back(rest[i]);
     }
     return cand;
@@ -170,10 +173,6 @@ vector<int> bfs(const vector<vector<int>> &G, int v) {
     }
 
     return dist;
-}
-
-int get_player_id(int punter_id, int punter, int turn) {
-    return (turn + punter_id) % punter;
 }
 
 // get the score of the game
