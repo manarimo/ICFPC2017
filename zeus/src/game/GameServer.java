@@ -29,6 +29,7 @@ public class GameServer {
     private final Settings settings;
     private final List<List<Future>> futures;
     private final List<String> names;
+    private final List<Boolean> zombie;
 
     // siteId of mine -> siteId -> distance
     private final java.util.Map<Integer, java.util.Map<Integer, Integer>> distances;
@@ -85,6 +86,10 @@ public class GameServer {
         for (int i = 0; i < ais.size(); i++) {
             names.add("noname");
         }
+        zombie = new ArrayList<>();
+        for (int i = 0; i < ais.size(); i++) {
+            zombie.add(false);
+        }
         System.err.println("Server initialized.");
     }
 
@@ -100,7 +105,7 @@ public class GameServer {
             final InputStream inputStream = exec.getInputStream();
             JsonUtil.write(outputStream, request);
             outputStream.close();
-            setTimeout(exec, 10);
+            setTimeout(exec, 10, i);
 
             try {
                 final SetupResponse response = JsonUtil.read(inputStream, SetupResponse.class);
@@ -127,28 +132,30 @@ public class GameServer {
             for (int j = Math.max(0, i - ais.size()); j < i; j++) {
                 moves.add(history.get(j));
             }
-            final GameplayRequest request = new GameplayRequest(new GameplayRequest.Moves(moves), states.get(punterId));
-
-            final Process exec = Runtime.getRuntime().exec(ais.get(punterId));
-            handshake(punterId, exec);
-            final InputStream inputStream = exec.getInputStream();
-            final OutputStream outputStream = exec.getOutputStream();
-            JsonUtil.write(outputStream, request);
-            outputStream.close();
-            setTimeout(exec, 1);
-
 
             Move move = Move.of(new Move.Pass(punterId));
-            try {
-                final GameplayResponse response = JsonUtil.read(inputStream, GameplayResponse.class);
-                move = response.toMove();
-                states.set(punterId, response.state);
-            } catch (final Exception e) {
-                System.err.println("ERROR");
-                final InputStream errorStream = exec.getErrorStream();
-                final Scanner scanner = new Scanner(errorStream);
-                while (scanner.hasNextLine()) {
-                    System.err.println(scanner.nextLine());
+            if (!zombie.get(punterId)) {
+                final GameplayRequest request = new GameplayRequest(new GameplayRequest.Moves(moves), states.get(punterId));
+
+                final Process exec = Runtime.getRuntime().exec(ais.get(punterId));
+                handshake(punterId, exec);
+                final InputStream inputStream = exec.getInputStream();
+                final OutputStream outputStream = exec.getOutputStream();
+                JsonUtil.write(outputStream, request);
+                outputStream.close();
+                setTimeout(exec, 1, punterId);
+
+                try {
+                    final GameplayResponse response = JsonUtil.read(inputStream, GameplayResponse.class);
+                    move = response.toMove();
+                    states.set(punterId, response.state);
+                } catch (final Exception e) {
+                    System.err.println("ERROR");
+                    final InputStream errorStream = exec.getErrorStream();
+                    final Scanner scanner = new Scanner(errorStream);
+                    while (scanner.hasNextLine()) {
+                        System.err.println(scanner.nextLine());
+                    }
                 }
             }
             handle(move, punterId);
@@ -187,7 +194,7 @@ public class GameServer {
         if (!remainingRivers.contains(river)) {
             System.err.println(objectMapper.writeValueAsString(move));
             history.add(Move.of(new Move.Pass(punterId)));
-            //todo warning
+            System.err.println("それ、取られてますよ。");
             return;
         }
         remainingRivers.remove(river);
@@ -279,7 +286,7 @@ public class GameServer {
         }
     }
 
-    private void setTimeout(final Process exec, final int waitSecond) {
+    private void setTimeout(final Process exec, final int waitSecond, final int punterId) {
         new Thread(() -> {
             try {
                 long l = System.currentTimeMillis();
@@ -287,6 +294,7 @@ public class GameServer {
                 if (exec.isAlive()) {
                     System.err.println("Time out!!!");
                     exec.destroy();
+                    zombie.set(punterId, true);
                 } else {
                     long l2 = System.currentTimeMillis();
                     System.err.println("time: " + (l2-l));
