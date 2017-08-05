@@ -3,7 +3,8 @@
         <board state={this.state} if={this.state} />
         <ul>
             <li each={log in this.logs}>
-                <a href="#{log}" onclick={change} data-logname={log}>{log}</a>
+                <a href="#{log.name}" onclick={change} data-logname={log.name}>{log.name}</a>
+                <span>({log.players.join(', ')})</span>
             </li>
         </ul>
     </div>
