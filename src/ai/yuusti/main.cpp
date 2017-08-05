@@ -1,10 +1,8 @@
 #include <bits/stdc++.h>
-#include <vector>
-#include <map>
 
 using namespace std;
 
-const int create_node_count = 1;    // required count to create a new node
+const int create_node_count = 20;    // required count to create a new node
 const int playout_count = 10000;        // times of playout
 double C = 1.2;
 
@@ -206,7 +204,7 @@ long long calc_score(const Game &game, int turn) {
 }
 
 double mt_rand() {
-    static auto rand = bind(uniform_real_distribution<double>(0.0, 100.0), mt19937(static_cast<unsigned int>(0)));
+    static auto rand = bind(uniform_real_distribution<double>(0.0, 100.0), mt19937(static_cast<unsigned int>(1)));
     return rand();
 }
 
@@ -239,8 +237,8 @@ long long random_play(const Game &game, int turn) {
 
     }
 
-    // score
-    return calc_score(game, edge, turn);
+    // score for our punter
+    return calc_score(game, edge, 0);
 }
 
 long long uct_search(Game &game, int turn) {
