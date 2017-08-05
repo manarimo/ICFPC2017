@@ -4,6 +4,21 @@ import json
 
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent.parent
 LOG_DIR = Path(ROOT_DIR / "logs")
+REPORT_DIR = Path(ROOT_DIR / "alpaca_link")
+ALPACA_LINK_TEMPLATE = """\
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8">
+</head>
+<body>
+<script>
+    window.location.href = "http://alpaca.adlersprung.osak.jp/index.html#{json_name}";
+</script>
+</body>
+</html>
+"""
 
 
 def process(log_path: Path):
@@ -16,6 +31,11 @@ def process(log_path: Path):
             metadata["names"] = log_json["names"]
     with meta_path.open("w") as f:
         json.dump(metadata, f)
+    alpaca_link_path = Path(REPORT_DIR / "index.html")
+    if not REPORT_DIR.exists():
+        REPORT_DIR.mkdir()
+    with alpaca_link_path.open("w") as f:
+        f.write(ALPACA_LINK_TEMPLATE.format(json_name=log_path.name))
 
 
 def main():
