@@ -97,6 +97,7 @@ void init() {
         }
     }
     
+    puts("0");
     printf("%d\n", index);
 }
 
