@@ -11,7 +11,7 @@ import (
 )
 
 func staticHandler(w http.ResponseWriter, r *http.Request) {
-	f, err := os.Open("alpaca/" + r.URL.Path)
+	f, err := os.Open("./" + r.URL.Path)
 	if err != nil {
 		w.WriteHeader(404)
 		return
