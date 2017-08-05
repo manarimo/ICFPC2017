@@ -57,7 +57,6 @@ class State {
     public:
     void next_stage() {
         switch (stage) {
-            case 0: stage = 1; break;
             case 1: stage = 2; break;
             case 2: index++; index == mines.size() ? stage = 3 : stage = 1; break;
         }
@@ -98,7 +97,7 @@ class State {
     }
     
     private:
-    int stage = 0;
+    int stage = 1;
     int index = 0;
     vector<int> mines;
 } state;
@@ -230,8 +229,6 @@ void cherry_pick() {
         
         if (best - 2 >= degree[mine]) output(id);
     }
-    
-    state.next_stage();
 }
 
 void color(int time) {
@@ -467,7 +464,7 @@ void prevent() {
 }
 
 void move() {
-    if (state.get_stage() == 0) cherry_pick();
+    cherry_pick();
     for (int time = 2; state.get_stage() != 3; time++) {
         color(time);
         if (state.get_stage() == 1) connect(time);
