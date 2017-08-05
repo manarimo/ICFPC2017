@@ -124,7 +124,7 @@ ostream &operator<<(ostream &os, const State &s) {
     for (int i = 0; i < n; ++i) {
         cout << n;
         for (int j = 0; j < n; ++i) {
-            os << ' ' << dist[i][j];
+            os << ' ' << s.dist[i][j];
         }
         cout << '\n';
     }
@@ -185,8 +185,8 @@ struct Candidate {
 };
 
 // get candidate moves
-vector<int> get_candidate(const Game &game, int turn, bool all = false) {
-    vector<int> rest, cand;
+vector<Candidate> get_candidate(const Game &game, int turn, bool all = false) {
+    vector<Candidate> rest, cand;
     vector<int> visited(game.n);
     for (int i = 0; i < game.edge.size(); ++i) {
         if (game.edge[i].owner == get_player_id(game.punter_id, game.punter, turn)) {
@@ -195,10 +195,10 @@ vector<int> get_candidate(const Game &game, int turn, bool all = false) {
     }
     for (int i = 0; i < game.edge.size(); ++i) {
         if (game.edge[i].owner == -1) {
-            rest.push_back(i);
+            rest.push_back({i, 1.0});
             if (visited[game.edge[i].from] || visited[game.edge[i].to]
                     || is_mine[game.edge[i].from] || is_mine[game.edge[i].to]) {
-                cand.push_back(i);
+                cand.push_back({i, 1.0});
             }
         }
     }
@@ -243,7 +243,8 @@ vector<long long> random_play(const Game &game, int turn) {
     priority_queue<pair<double, int>> q;
 
     vector<int> inqueue(game.m);
-    for (auto e: cand) {
+    for (auto c: cand) {
+        auto e = c.idx;
         inqueue[e] = 1;
         q.emplace(mt_rand(), e);
     }
@@ -286,14 +287,14 @@ vector<long long> uct_search(Game &game, int turn) {
 
     // find the best move so far
     for (auto &e : get_candidate(game, turn)) {
-        if (!v.ch[e].cnt) {
-            idx = e;
+        if (!v.ch[e.idx].cnt) {
+            idx = e.idx;
             break;
         }
-        double ucb = calc_ucb(v.ch[e].ex, v.ch[e].cnt, v.cnt);
+        double ucb = calc_ucb(v.ch[e.idx].ex, v.ch[e.idx].cnt, v.cnt) * e.modifier;
         if (best < ucb) {
             best = ucb;
-            idx = e;
+            idx = e.idx;
         }
     }
 
@@ -358,10 +359,10 @@ Result move(Game &game, State state, int playout) {
     int idx = -1;
     double best = -1;
     for (auto &e : get_candidate(game, 0)) {
-        cerr << game.edge[e].from << ' ' << game.edge[e].to << ' ' << root.ch[e].ex << endl;
-        double ucb1 = calc_ucb(root.ch[e].ex, root.ch[e].cnt, root.cnt);
+        cerr << game.edge[e.idx].from << ' ' << game.edge[e.idx].to << ' ' << root.ch[e.idx].ex << ' ' << e.modifier << endl;
+        double ucb1 = calc_ucb(root.ch[e.idx].ex, root.ch[e.idx].cnt, root.cnt) * e.modifier;
         if (best >= ucb1) continue;
-        best = ucb1, idx = e;
+        best = ucb1, idx = e.idx;
     }
     return Result{idx, {}};
 }
