@@ -129,6 +129,7 @@ void init() {
     
     for (i = 0; i < order.size(); i++) mines[i] = order[i].second.second;
     
+    puts("0");
     output(-1);
 }
 
