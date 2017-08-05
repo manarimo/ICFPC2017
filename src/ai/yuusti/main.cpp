@@ -61,17 +61,73 @@ ostream &operator<<(ostream &os, const Game &g) {
     return os;
 }
 
+
+const int INF = static_cast<const int>(1e9);
+
+vector<int> bfs(const vector<vector<int>> &G, int v) {
+    int n = static_cast<int>(G.size());
+    vector<int> dist(n, INF);
+
+    queue<pair<int, int>> q;
+    q.push(make_pair(v, 0));
+    dist[v] = 0;
+    while (!q.empty()) {
+        auto &p = q.front();
+        q.pop();
+
+        for (auto nv: G[p.first]) {
+            if (dist[nv] == INF) {
+                dist[nv] = p.second + 1;
+                q.emplace(nv, p.second + 1);
+            }
+        }
+    }
+
+    return dist;
+}
+
+vector<vector<int>> calc_dist(const Game &game) {
+    vector<vector<int>> G(game.n);
+    for (auto &e : game.edge) {
+        if (e.owner == game.punter_id || e.owner == -1) {
+            G[e.from].push_back(e.to);
+            G[e.to].push_back(e.from);
+        }
+    }
+    vector<vector<int>> dist(game.n);
+    for (int i = 0; i < game.n; ++i) {
+        dist[i] = bfs(G, i);
+    }
+    return dist;
+}
+
 struct State {
-    string s;
+    vector<vector<int>> dist;
 };
 
 istream &operator>>(istream &is, State &s) {
-    is >> s.s;
+    int n;
+    is >> n;
+    s.dist.resize(n);
+    for (int i = 0; i < n; ++i) {
+        s.dist.resize(n);
+        for (int j = 0; j < n; ++j) {
+            is >> s.dist[i][j];
+        }
+    }
     return is;
 }
 
 ostream &operator<<(ostream &os, const State &s) {
-    cout << s.s;
+    int n = s.dist.size();
+    os << n << '\n';
+    for (int i = 0; i < n; ++i) {
+        cout << n;
+        for (int j = 0; j < n; ++i) {
+            os << ' ' << dist[i][j];
+        }
+        cout << '\n';
+    }
     return os;
 }
 
@@ -113,14 +169,6 @@ struct UCBnode {
 map<long long, int> game_freq;
 map<long long, UCBnode> game_to_node;
 
-vector<vector<Edge>> G;
-void buildGraph(const Game &game) {
-    for (int i = 0; i < game.edge.size(); ++i) {
-        G[game.edge[i].from].push_back(game.edge[i]);
-        G[game.edge[i].to].push_back(game.edge[i]);
-    }
-}
-
 int get_player_id(int punter_id, int punter, int turn) {
     return (turn + punter_id) % punter;
 }
@@ -130,6 +178,11 @@ double mt_rand() {
     static auto rand = bind(uniform_real_distribution<double>(0.0, 100.0), mt);
     return rand();
 }
+
+struct Candidate {
+    int idx;
+    double modifier;
+};
 
 // get candidate moves
 vector<int> get_candidate(const Game &game, int turn, bool all = false) {
@@ -151,30 +204,6 @@ vector<int> get_candidate(const Game &game, int turn, bool all = false) {
     }
     if (all || cand.empty()) return rest;
     return cand;
-}
-
-const int INF = static_cast<const int>(1e9);
-
-vector<int> bfs(const vector<vector<int>> &G, int v) {
-    int n = static_cast<int>(G.size());
-    vector<int> dist(n, INF);
-
-    queue<pair<int, int>> q;
-    q.push(make_pair(v, 0));
-    dist[v] = 0;
-    while (!q.empty()) {
-        auto &p = q.front();
-        q.pop();
-
-        for (auto nv: G[p.first]) {
-            if (dist[nv] == INF) {
-                dist[nv] = p.second + 1;
-                q.emplace(nv, p.second + 1);
-            }
-        }
-    }
-
-    return dist;
 }
 
 // get the score of the game
@@ -288,7 +317,36 @@ vector<long long> uct_search(Game &game, int turn) {
     return res;
 }
 
-Result search(Game &game, int playout) {
+pair<bool, Result> first_move(Game &game, State &state) {
+    for (auto &e: game.edge) {
+        if (e.owner == game.punter_id) {
+            return make_pair(false, Result{});
+        }
+    }
+    auto &dist = state.dist;
+
+    int idx = -1;
+    long long m = 1e18;
+    for (int i = 0; i < game.edge.size(); ++i) {
+        auto &e = game.edge[i];
+        long long sum = 0;
+        for (auto &v: game.mine) {
+            long long x = min(dist[e.from][v], dist[e.to][v]);
+            sum += x * x;
+        }
+        if (sum < m) {
+            m = sum;
+            idx = i;
+        }
+    }
+
+    return make_pair(true, Result{idx, state});
+}
+
+Result move(Game &game, State state, int playout) {
+    auto fm = first_move(game, state);
+    if (fm.first) return fm.second;
+
     for (auto &m: game.mine) {
         is_mine[m] = 1;
     }
@@ -324,6 +382,11 @@ istream &operator>>(istream &is, Settings &settings) {
     return is;
 }
 
+State init(const Game &game) {
+    auto d = calc_dist(game);
+    return State{d};
+}
+
 int main() {
     string command;
     cin >> command;
@@ -347,11 +410,11 @@ int main() {
             cin >> game >> settings;
             cerr << game << endl;
             cout << 0 << endl;
-            cout << "tsurapoyo~" << endl;
+            cout << init(game) << endl;
             break;
         case MOVE:
             cin >> game >> settings >> state;
-            result = search(game, playout_count / game.edge.size());
+            result = move(game, state, playout_count / game.edge.size());
             cout << result.edge << '\n' << result.state;
             break;
         case END:
