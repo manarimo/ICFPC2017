@@ -5,7 +5,7 @@ This company is famous not only by its amazing quality of products, but also by 
 There are many ["Friends"](http://kemono-friends.wikia.com/wiki/Friends) working in this company as well.
 Those "Friends" helped us a lot during this year's ICFP contest by
 [automatically scheduling random matches for evaluation](https://github.com/osak/ICFPC2017/blob/readme/src/python/fennec/__main__.py),
-[visualizing matches](https://github.com/osak/ICFPC2017/tree/readme/alpaca),
+[visualizing matches](https://github.com/osak/ICFPC2017/tree/readme/alpaca), [analyzing match results](https://github.com/osak/ICFPC2017/tree/readme/konohazuku)
 or [communicating with online server](https://github.com/osak/ICFPC2017/blob/readme/src/python/serval_cat/__main__.py).
 
 ## Members
