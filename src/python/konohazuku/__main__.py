@@ -57,7 +57,7 @@ def main():
     for name in all_names:
         win, all, draw = per_win_agg[name], per_match_agg[name], per_draw_agg[name]
         nall = all - draw
-        header = "{}: Rating: {}, {:.5f}% ({} / {}, draw: {})".format(name.strip(), name2ratings[name], prob(win, all, draw) * 100, win, nall, draw)
+        header = "{}: Rating: {:.3}, {:.2f}% ({} / {}, draw: {})".format(name.strip(), name2ratings[name], prob(win, all, draw) * 100, win, nall, draw)
         print(header)
         index.append(header)
         row = []
@@ -66,7 +66,7 @@ def main():
             nall = win + lose
             draw = draws[(name, opponent)]
             all = nall + draw
-            column = " - vs {}: {:.5f}% ({} / {}, draw: {})".format(opponent.strip(), prob(win, all, draw) * 100, win, nall, draw)
+            column = " - vs {}: {:.2f}% ({} / {}, draw: {})".format(opponent.strip(), prob(win, all, draw) * 100, win, nall, draw)
             print(column)
             row.append(column)
         data_table.append(row)
