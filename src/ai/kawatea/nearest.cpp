@@ -23,7 +23,7 @@ vector <int> dist;
 vector <int> parent;
 
 void input() {
-    int i;
+    int setting, i;
     
     scanf("%d", &punter);
     scanf("%d", &id);
@@ -51,6 +51,14 @@ void input() {
         
         graph[x].push_back(edge(y, i, z));
         graph[y].push_back(edge(x, i, z));
+    }
+    
+    scanf("%d", &setting);
+    
+    for (int i = 0; i < setting; i++) {
+        char option[10];
+        
+        scanf("%s", option);
     }
 }
 
