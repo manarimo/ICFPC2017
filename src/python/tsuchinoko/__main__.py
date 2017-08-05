@@ -20,7 +20,7 @@ def exe(map_path: Path, ai_commands, ruleset=None):
     cmd.append(str(len(ai_commands)))
     cmd += ai_commands
     print(cmd)
-    out = subprocess.check_output(cmd)
+    out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
     out_obj = json.loads(out.decode("utf-8"))
     scores = {}
     for score in out_obj["scores"]:
@@ -45,12 +45,12 @@ def ruleset(ruleset_str):
         return []
     return ruleset_str.strip().split(',')
 
-REPEAT = 10
+REPEAT = 1
 NUM_PLAYERS = [2, 4, 8]
 MAPS = ["lambda", "randomMedium", "randomSparse", "rand1", "rand3"]
 RANDOM_AI = "6758e6b36e9b185501ea5d2731b98a5f396f2c67"
 
-BENCHMARK_VERSION = 1
+BENCHMARK_VERSION = 0
 
 def main():
     print(ROOT_DIR)
