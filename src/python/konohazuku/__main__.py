@@ -20,6 +20,8 @@ def main():
             continue
         scores = [0, 0]
         names = meta_json["names"]
+        if names[0] == names[1]:
+            continue
         for sc in meta_json["scores"]:
             scores[sc["punter"]] = sc["rank_score"]
         if scores[0] > scores[1]:
