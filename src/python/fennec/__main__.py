@@ -8,6 +8,7 @@ import time
 import shutil
 import json
 import numpy as np
+import os
 
 
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent.parent
@@ -48,7 +49,7 @@ def exe(map_path: Path, ai_commands, ruleset=None, tags=None):
             out_obj["tag_names"] = tags
             out = json.dumps(out_obj)
         f.write(out)
-    print("alpaca link: http://alpaca.adlersprung.osak.jp/index.html#{}".format(filename.replace(".json", "")))
+    print("alpaca link: http://alpaca.adlersprung.osak.jp/index.html#{}-{}".format(os.getenv("JOB_NAME"), os.getenv("BUILD_NUMBER")))
 
 
 def ai_command(commit):
