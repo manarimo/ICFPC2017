@@ -177,7 +177,7 @@ void output(int edge_id) {
 }
 
 void handshake() {
-    puts("kawatea-cherry-pick");
+    puts("kawatea-cherry-pick-central");
 }
 
 void init() {
@@ -186,16 +186,18 @@ void init() {
     queue<int> q;
     
     for (int mine : mines.get_mines()) {
-        int last = -1, connected = 0;
+        int connected = 0, sum = 0;
         
         for (int i = 0; i < graph.size(); i++) dist[i] = INF;
         dist[mine] = 0;
         q.push(mine);
         
         while (!q.empty()) {
-            last = q.front();
-            connected++;
+            int last = q.front();
             q.pop();
+            
+            connected++;
+            if (mines.is_mine(last)) sum += dist[last];
             
             for (const Edge& edge : graph[last]) {
                 int next = edge.to;
@@ -206,7 +208,7 @@ void init() {
             }
         }
         
-        order.push_back(make_pair(-connected, make_pair(dist[last], mine)));
+        order.push_back(make_pair(-connected, make_pair(sum, mine)));
     }
     
     sort(order.begin(), order.end());
