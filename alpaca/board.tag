@@ -34,21 +34,9 @@
         </div>
     </div>
     <script>
-        this.sites = opts.state.map.sites;
-        this.rivers = opts.state.map.rivers;
-        this.mines = opts.state.map.mines;
-        this.histories = opts.state.history;
-        this.frame = this.histories.length;
-        this.minX = Math.min(...this.sites.map((s) => s.x)) - 1;
-        this.minY = Math.min(...this.sites.map((s) => s.y)) - 1;
-        this.maxX = Math.max(...this.sites.map((s) => s.x)) + 1;
-        this.maxY = Math.max(...this.sites.map((s) => s.y)) + 1;
-        this.viewBox = `${this.minX} ${this.minY} ${this.maxX - this.minX} ${this.maxY - this.minY}`;
-        this.scores = {};
-        this.histories.forEach((h, i) => this.scores[h.move.claim.punter] = h.score);
-
-        this.siteDict = {};
-        this.sites.forEach((site) => this.siteDict[site.id] = site);
+        this.on('before-mount', () => {
+            this.refresh(opts);
+        });
 
         keyPress(e) {
             console.log(e);
@@ -71,11 +59,30 @@
             this.update();
         }
 
+        refresh(opts) {
+            this.sites = opts.state.map.sites;
+            this.rivers = opts.state.map.rivers;
+            this.mines = opts.state.map.mines;
+            this.histories = opts.state.history;
+            this.frame = this.histories.length;
+            this.minX = Math.min(...this.sites.map((s) => s.x)) - 1;
+            this.minY = Math.min(...this.sites.map((s) => s.y)) - 1;
+            this.maxX = Math.max(...this.sites.map((s) => s.x)) + 1;
+            this.maxY = Math.max(...this.sites.map((s) => s.y)) + 1;
+            this.viewBox = `${this.minX} ${this.minY} ${this.maxX - this.minX} ${this.maxY - this.minY}`;
+            this.scores = {};
+            this.histories.forEach((h, i) => this.scores[h.move.claim.punter] = h.score);
+
+            this.siteDict = {};
+            this.sites.forEach((site) => this.siteDict[site.id] = site);
+        }
+
         this.on('mount', () => {
             window.addEventListener('keydown', this.keyPress);
         });
 
         this.on('update', () => {
+            this.refresh(opts);
             this.scores = {};
             for (let i = 0; i < this.frame; ++i) {
                 const h = this.histories[i];
