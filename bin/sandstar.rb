@@ -2,6 +2,7 @@
 
 require 'json'
 require 'open3'
+require 'stringio'
 require 'pp'
 
 class River < Struct.new(:source, :target, :owner)
@@ -195,43 +196,55 @@ def print_json(stdout, obj)
   stdout.flush
 end
 
+def run(cmd, input)
+  out, err = Open3.capture3(cmd, stdin_data: input)
+  yield out, err
+end
+
 reader = Reader.new(STDIN)
-Open3.popen3(ARGV[0]) do |stdin, stdout, stderr|
-  stdin.puts 'HANDSHAKE'
-  stdin.close
-  my_name = stdout.read
+
+run(ARGV[0], "HANDSHAKE\n") do |out, err|
+  my_name = out.chomp
   payload = {
     me: my_name
   }
   print_json(STDOUT, payload)
   reader.read_json
+  STDERR.puts err
 end
-Open3.popen3(ARGV[0]) do |stdin, stdout, stderr|
-  json = reader.read_json
-  if json.key?('punter')
-    obj = State.from_json(json)
-    stdin.puts 'INIT'
-    stdin.puts obj.to_kyopro
-    stdin.close
+
+json = reader.read_json
+if json.key?('punter')
+  obj = State.from_json(json)
+  input = <<"END"
+INIT
+#{obj.to_kyopro}
+END
+  run(ARGV[0], input) do |out, err|
+    stdout = StringIO.new(out)
     num_futures = stdout.gets.to_i
     futures = []
     for i in 0...num_futures
       source, target = stdout.gets.split().map(&:to_i)
       futures.push({source: source, target: target})
     end
-    buf = stdout.read
-    obj.app_state = buf
+    obj.app_state = stdout.read
     payload = {
-      ready: obj.my_id,
-      futures: futures,
-      state: obj.to_hash
+        ready: obj.my_id,
+        futures: futures,
+        state: obj.to_hash
     }
     print_json(STDOUT, payload)
-  elsif json.key?('move')
-    obj = GamePlay.from_json(json)
-    stdin.puts 'MOVE'
-    stdin.puts obj.to_kyopro
-    stdin.close
+    STDERR.puts err
+  end
+elsif json.key?('move')
+  obj = GamePlay.from_json(json)
+  input = <<"END"
+MOVE
+#{obj.to_kyopro}
+END
+  run(ARGV[0], input) do |out, err|
+    stdout = StringIO.new(out)
     edge_id = stdout.gets.to_i
     obj.state.app_state = stdout.read
     obj.state.map.set_owner(obj.state.my_id, edge_id)
@@ -239,7 +252,8 @@ Open3.popen3(ARGV[0]) do |stdin, stdout, stderr|
         state: obj.state.to_hash
     }.merge(Move.new(:claim, obj.state.my_id, edge_id).to_hash(obj.state.map))
     print_json(STDOUT, payload)
-  elsif json.key?('stop')
+    STDERR.puts err
   end
-  STDERR.puts stderr.read
+elsif json.key?('stop')
+  STDERR.puts reader.read_json
 end
