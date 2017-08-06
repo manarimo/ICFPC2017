@@ -2,10 +2,9 @@
 
 using namespace std;
 
-const int create_node_count = 2;    // required count to create a new node
-const int playout_count = 100000;        // times of playout
+const int create_node_count = 2;
+const int playout_count = 50000;
 double C = 1.2;
-
 
 struct Edge {
     int from;
@@ -441,7 +440,7 @@ int main() {
             break;
         case MOVE:
             cin >> game >> settings >> state;
-            result = move(game, state, playout_count / game.edge.size());
+            result = move(game, state, playout_count / (game.edge.size() * game.punter));
             cout << result.edge << '\n' << result.state << endl;
             break;
         case END:
