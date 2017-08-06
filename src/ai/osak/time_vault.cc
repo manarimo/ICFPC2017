@@ -5,7 +5,7 @@
 using namespace std;
 
 struct River {
-    int id, from, to, owner;
+    int id, from, to, owner1, owner2;
 };
 
 int P, V, E, M;
@@ -30,9 +30,9 @@ void readMap() {
     for (int i = 0; i < E; ++i) {
         River r;
         r.id = i;
-        cin >> r.from >> r.to >> r.owner;
+        cin >> r.from >> r.to >> r.owner1 >> r.owner2;
         graph[r.from].push_back(r);
-        graph[r.to].push_back(River{r.id, r.to, r.from, r.owner});
+        graph[r.to].push_back(River{r.id, r.to, r.from, r.owner1, r.owner2});
     }
 }
 
@@ -44,7 +44,7 @@ void init() {
         string s;
         cin >> s;
         cerr << s << endl;
-        if (s == "splurge") {
+        if (s == "splurges") {
             useSplurge = true;
         }
     }
@@ -66,7 +66,7 @@ void calcOwned() {
     }
     for (const auto &row : graph) {
         for (const River &r : row) {
-            if (r.owner == myId) {
+            if (r.owner1 == myId || r.owner2 == myId) {
                 owned[r.from] = owned[r.to] = true;
             }
         }
@@ -83,7 +83,7 @@ vector<int> tap(int start) {
         q[1].clear();
         for (const auto from : q[0]) {
             for (const auto &r : graph[from]) {
-                if (r.owner != -1) continue;
+                if (r.owner1 != -1) continue; // TODO options
                 if (dist[r.to] != -1) continue;
                 dist[r.to] = dist[from] + 1;
                 prev[r.to] = r;
@@ -127,7 +127,7 @@ int greedy() {
             ++dist;
             for (auto from : q[0]) {
                 for (const River &r : graph[from]) {
-                    if (r.owner != -1 && r.owner != myId) continue;
+                    if (r.owner1 != -1 && r.owner1 != myId) continue; // TODO options
                     if (visited[r.to]) continue;
                     score[r.to] += dist * dist;
                     visited[r.to] = true;
@@ -142,7 +142,7 @@ int greedy() {
     int ansScore = 0;
     for (const auto &row : graph) {
         for (const River &r : row) {
-            if (r.owner != -1) continue;
+            if (r.owner1 != -1) continue; // TODO options
             if (owned[r.from] && !owned[r.to] && score[r.to] > ansScore) {
                 ans = r.id;
                 ansScore = score[r.to];
