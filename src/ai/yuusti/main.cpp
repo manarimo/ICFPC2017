@@ -304,12 +304,9 @@ vector<long long> uct_search(Game &game, int turn) {
         }
         return result;
     }
-    long long prv = calc_score(game, turn);
     game.edge[idx].owner = (game.punter_id + turn) % game.punter;
-    long long diff = calc_score(game, turn) - prv;
     // This res should be the score of the player playing the turn
     vector<long long> res = uct_search(game, (turn + 1) % game.punter);
-    res[turn] += diff;
     game.edge[idx].owner = -1;
 
     // propagate
