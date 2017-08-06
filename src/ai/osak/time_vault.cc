@@ -94,7 +94,6 @@ vector<int> tap(int start) {
     }
     int maxMine = -1;
     for (int mine = 0; mine < V; ++mine) {
-        cerr << start << ' ' << mine << ' ' << dist[mine] << endl;
         if (start == mine) continue;
         if (!owned[mine]) continue;
         if (dist[mine] != -1 && (maxMine == -1 || dist[mine] > dist[maxMine])) {
@@ -114,7 +113,7 @@ vector<int> tap(int start) {
     return res;
 }
 
-void greedy() {
+int greedy() {
     vector<int> score(V, 0);
     vector<int> q[2];
     for (auto mine : mines) {
@@ -128,7 +127,7 @@ void greedy() {
             ++dist;
             for (auto from : q[0]) {
                 for (const River &r : graph[from]) {
-                    if (r.owner != -1) continue;
+                    if (r.owner != -1 && r.owner != myId) continue;
                     if (visited[r.to]) continue;
                     score[r.to] += dist * dist;
                     visited[r.to] = true;
@@ -151,6 +150,7 @@ void greedy() {
         }
     }
     cout << ans << endl;
+    return ans;
 }
 
 void play() {
@@ -182,7 +182,9 @@ void play() {
             return;
         }
     }
-    greedy();
+    if (greedy() != -1) {
+        timeCounter = 0;
+    }
 }
 
 int main() {
