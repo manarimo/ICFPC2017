@@ -30,6 +30,7 @@ public class GameServer {
     private final List<List<Future>> futures;
     private final List<String> names;
     private final List<Boolean> zombie;
+    private final List<Integer> skipping;
 
     // siteId of mine -> siteId -> distance
     private final java.util.Map<Integer, java.util.Map<Integer, Integer>> distances;
@@ -89,6 +90,10 @@ public class GameServer {
         zombie = new ArrayList<>();
         for (int i = 0; i < ais.size(); i++) {
             zombie.add(false);
+        }
+        skipping = new ArrayList<>();
+        for (int i = 0; i < ais.size(); i++) {
+            skipping.add(0);
         }
         System.err.println("Server initialized.");
     }
@@ -186,22 +191,62 @@ public class GameServer {
                 .collect(Collectors.toList());
     }
 
+    private void pass(final int punterId, final String message) {
+        history.add(Move.of(new Move.Pass(punterId)));
+        System.err.println(message);
+        skipping.set(punterId, skipping.get(punterId) + 1);
+    }
+
     private void handle(final Move move, final int punterId) throws IOException {
         if (move.claim == null) {
-            history.add(Move.of(new Move.Pass(punterId)));
+            pass(punterId, null);
             return;
+        }
+        if (move.splurge != null) {
+            if (!settings.splurges) {
+                pass(punterId, "Splurges が有効になっていません。");
+            }
+            if (move.splurge.route.size() - 2 > skipping.get(punterId)) {
+                pass(punterId, String.format("有給申請 %d日 残有給: %d日", move.splurge.route.size() - 2, skipping.get(punterId)));
+                return;
+            }
+            for (final River river : move.splurge.toRivers()) {
+                if (!containsRiver(river)) {
+                    pass(punterId, "それ、先月までなんですよ。");
+                    return;
+                }
+            }
+            for (final River river : move.splurge.toRivers()) {
+                River realRiver = removeRiver(river);
+                claimedRivers.get(move.splurge.punter).add(realRiver);
+                history.add(move);
+                skipping.set(punterId, 0);
+            }
         }
         final Move.Claim claim = move.claim;
         River river = claim.toRiver();
         if (!remainingRivers.contains(river)) {
-            System.err.println(objectMapper.writeValueAsString(move));
-            history.add(Move.of(new Move.Pass(punterId)));
-            System.err.println("それ、取られてますよ。");
+            pass(punterId, "それ、取られてますよ。");
             return;
         }
         remainingRivers.remove(river);
         claimedRivers.get(claim.punter).add(river);
         history.add(move);
+        skipping.set(punterId, 0);
+    }
+
+    private boolean containsRiver(final River river) {
+        return remainingRivers.contains(river) || remainingRivers.contains(river.reverse());
+    }
+
+    private River removeRiver(final River river) {
+        if (remainingRivers.contains(river)) {
+            remainingRivers.remove(river);
+            return river;
+        } else {
+            remainingRivers.remove(river.reverse());
+            return null;
+        }
     }
 
     private Integer findFutureTarget(final int punterId, final int mineSiteId) {

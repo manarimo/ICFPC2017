@@ -22,13 +22,13 @@ public class Main {
         final CommandLine parse = parser.parse(new ZeusOptions(), rawArgs);
         final String[] args = parse.getArgs();
         if (args.length < 2) {
-            System.err.println("zeus [map file] [# players] (-f1) ai1 ai2 ...");
+            System.err.println("zeus [map file] [# players] (options) ai1 ai2 ...");
             return;
         }
         final String mapFilePath = args[0];
         final int numPlayer = Integer.valueOf(args[1]);
         if (args.length < numPlayer + 2) {
-            System.err.println("zeus [map file] [# players] (-f1) ai1 ai2 ...");
+            System.err.println("zeus [map file] [# players] (options) ai1 ai2 ...");
             return;
         }
 
@@ -45,6 +45,9 @@ public class Main {
         if (parse.hasOption("x1")) {
             settings.futures = true;
         }
+        if (parse.hasOption("x2")) {
+            settings.splurges = true;
+        }
 
         final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES,false);
@@ -57,6 +60,7 @@ public class Main {
     public static class ZeusOptions extends Options {
         public ZeusOptions() {
             addOption("x1", false, "Futures 1.0");
+            addOption("x2", false, "Splurges 1.0");
         }
     }
 }

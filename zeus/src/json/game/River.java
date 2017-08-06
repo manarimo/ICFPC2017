@@ -13,6 +13,10 @@ public class River {
         this.target = target;
     }
 
+    public River reverse() {
+        return new River(target, source);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
