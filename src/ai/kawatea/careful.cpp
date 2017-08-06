@@ -98,7 +98,9 @@ class UnionFind {
     vector<vector<int>> mines;
 } uf;
 
+int stage = 0;
 vector<vector<Edge>> graph;
+vector<vector<int>> degree;
 vector<vector<int>> all_dist;
 
 void input(bool read_state) {
@@ -120,6 +122,7 @@ void input(bool read_state) {
     
     scanf("%d", &m);
     graph.resize(n);
+    degree = vector<vector<int>>(punter, vector<int>(n));
     for (int i = 0; i < m; i++) {
         int from, to, owner;
         scanf("%d %d %d", &from, &to, &owner);
@@ -131,6 +134,9 @@ void input(bool read_state) {
             graph[from].push_back(Edge(to, i, true));
             graph[to].push_back(Edge(from, i, true));
             uf.unite(from, to);
+        } else {
+            degree[owner][from]++;
+            degree[owner][to]++;
         }
     }
     
@@ -142,6 +148,7 @@ void input(bool read_state) {
     
     all_dist = vector<vector<int>>(mine, vector<int>(n));
     if (read_state) {
+        scanf("%d", &stage);
         for (int i = 0; i < mine; i++) {
             for (int j = 0; j < n; j++) {
                 int d;
@@ -153,6 +160,7 @@ void input(bool read_state) {
 }
 
 void output_state() {
+    printf("%d\n", stage);
     for (int i = 0; i < mines.get_count(); i++) {
         for (int j = 0; j < graph.size(); j++) {
             printf("%d ", all_dist[i][j]);
@@ -364,7 +372,43 @@ void connect() {
         }
     }
     
-    if (best > 0) connect(v1, v2);
+    if (best > 0) {
+        connect(v1, v2);
+    } else {
+        stage++;
+    }
+}
+
+void surround() {
+    int id = -1;
+    vector<pair<int, int>> order;
+    
+    for (int mine : mines.get_mines()) {
+        int rest = 0;
+        for (const Edge& edge : graph[mine]) {
+            if (!edge.used) rest++;
+        }
+        if (rest > 0) order.push_back(make_pair(rest, mine));
+    }
+    sort(order.begin(), order.end());
+    
+    for (int i = 0; i < order.size(); i++) {
+        int mine = order[i].second;
+        for (const Edge& edge : graph[mine]) {
+            if (edge.used) continue;
+            for (int j = 0; j < punter; j++) {
+                if (j == punter_id) continue;
+                if (degree[j][mine] == 0 && degree[j][edge.to] > 0) output(edge.id);
+                if (degree[j][mine] == 0 && id == -1) id = edge.id;
+            }
+        }
+    }
+    
+    if (id >= 0) {
+        output(id);
+    } else {
+        stage++;
+    }
 }
 
 void extend() {
@@ -417,7 +461,11 @@ void extend() {
         }
     }
     
-    if (best > 0) output(id);
+    if (best > 0) {
+        output(id);
+    } else {
+        stage++;
+    }
 }
 
 void prevent() {
@@ -439,9 +487,10 @@ void prevent() {
 }
 
 void move() {
-    connect();
-    extend();
-    prevent();
+    if (stage == 0) connect();
+    if (stage == 1) surround();
+    if (stage == 2) extend();
+    if (stage == 3) prevent();
 }
 
 void end() {
