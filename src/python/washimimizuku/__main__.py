@@ -2,6 +2,7 @@ from konohazuku.db import fetch_all_logs
 from utils.const import ROOT_DIR
 import pandas as pd
 from pathlib import Path
+import json
 
 
 def turns(match_json):
@@ -35,7 +36,7 @@ def to_df(items, metrics):
 
 
 def main():
-    logs = list(row["log"] for row in fetch_all_logs())
+    logs = list(json.loads(row["log"]) for row in fetch_all_logs())
 
     match_metrics = [
         ("turns", turns)
