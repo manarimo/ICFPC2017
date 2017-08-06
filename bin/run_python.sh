@@ -9,4 +9,4 @@ shift
 
 pip3 install -r $REQUIREMENTS
 
-python3 $PY_MODULE "$@"
+PYTHONPATH=$PY_BASE python3 $PY_MODULE "$@"
