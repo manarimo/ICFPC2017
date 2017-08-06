@@ -4,6 +4,8 @@
 #include <queue>
 #include <set>
 #include <algorithm>
+#include <fstream>
+#include <cmath>
 
 using namespace std;
 
@@ -153,9 +155,10 @@ double getMinPathScore(vector<double>& score, map<int, double>& minPathScore, ma
         int to = e.from == x ? e.to : e.from;
         //cerr << dist[x] << "," << dist[to] << endl;
         if (dist[x] >= dist[to]) continue;
-        double nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, to);
+        double nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, to) * pathNum[x] / pathNum[to];
         ret += nscore / game.punter;
-        score[es[x][i]] += nscore * pathNum[x] / pathNum[to];
+        score[es[x][i]] += nscore * pow(1. / game.punter, dist[x]);
+        //cerr << "edge" << es[x][i] << "/" << score[es[x][i]] << endl;
     }
     //cerr << "OUT" << x << " " << ret << endl;
     return minPathScore[x] = ret;
@@ -220,33 +223,44 @@ Result move(Game &game, State &state) {
         }
     }
 
+//    cerr << "DIST2" << endl;
+//    for (int i = 0; i < dist2.size(); i++) {
+//        for (int j = 0; j < dist2[i].size(); j++) {
+//            cerr << dist2[i][j] << " ";
+//        }
+//        cerr << endl;
+//    }
+
     for (int i = 0; i < game.mines; i++) {
         int mine = uf.find(game.mine[i]);
         map<int, int> pathNum;
         map<int, int> dist;
-        queue<int> q; q.push(mine); q.push(-1);
-        pathNum[game.mine[i]] = 1;
+        set<int> vis;
+        set<int> q; q.insert(mine);
+        pathNum[mine] = 1;
         int d = 0;
-        while (q.size() > 1) {
-            int x = q.front(); q.pop();
-            if (x == -1) {
-                d++;
-                q.push(-1);
-                continue;
+        for (int d = 0; !q.empty(); d++) {
+            set<int> nq;
+            for (set<int>::iterator it = q.begin(); it != q.end(); ++it) {
+                vis.insert(*it);
             }
-            if (dist.find(x) != dist.end()) {
-                continue;
-            }
-            dist[x] = d;
-            for (int j = 0; j < es[x].size(); j++) {
-                Edge &e = game.edge[es[x][j]];
-                int to = e.from == x ? e.to : e.from;
-                to = uf.find(to);
-                if (dist.find(to) == dist.end()) {
-                    pathNum[to] += pathNum[x];
-                    q.push(to);
+            for (set<int>::iterator it = q.begin(); it != q.end(); ++it) {
+                int x = *it;
+                //cerr << x << endl;
+                dist[x] = d;
+                for (int j = 0; j < es[x].size(); j++) {
+                    Edge &e = game.edge[es[x][j]];
+                    int to = uf.find(e.from) == x ? e.to : e.from;
+                    to = uf.find(to);
+                    //cerr << " " << to << endl;
+                    if (vis.find(to) == vis.end()) {
+                        pathNum[to] += pathNum[x];
+                        nq.insert(to);
+                    }
                 }
             }
+            //cerr << "===" << endl;
+            q = nq;
         }
 
 //        cerr << "PATHNUM" << endl;
@@ -266,16 +280,16 @@ Result move(Game &game, State &state) {
     double maxScore = 0;
     int maxIdx = -1;
 
-    //cerr << "SCORE" << endl;
-    for (int i = 0; i < game.m; i++) {
-        if (game.edge[i].owner == -1) {
-            //cerr << i << ":" << score[i] << endl;
-            if (maxScore < score[i]) {
-                maxScore = score[i];
-                maxIdx = i;
-            }
-        }
-    }
+//    cerr << "SCORE" << endl;
+//    for (int i = 0; i < game.m; i++) {
+//        if (game.edge[i].owner == -1) {
+//            cerr << i << ":" << score[i] << endl;
+//            if (maxScore < score[i]) {
+//                maxScore = score[i];
+//                maxIdx = i;
+//            }
+//        }
+//    }
 
     if (maxIdx == -1) {
         for (int i = 0; i < game.m; i++) {
