@@ -137,7 +137,7 @@ void end() {
 }
 
 int main() {
-  srand(time(0));
+  srand(clock());
     char protocol[10];
     scanf("%s", protocol);
     
