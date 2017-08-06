@@ -33,7 +33,7 @@
             </div>
             <form onsubmit={submit}>
                 <input type="text" id="frame" value={this.frame} /> / <span>{this.histories.length}</span>
-                <span>{this.currentMove()}</span>
+                <div>{this.currentMove()}</div>
                 <ul>
                     <li>矢印キーかhjklでフレームを操作できるよぉ</li>
                     <li>テキストボックスに数値を入れてEnterでそこまで飛ぶよぉ</li>
@@ -53,10 +53,12 @@
             const obj = this.histories[this.frame - 1].move;
             if (obj.option) {
                 return `Player ${obj.option.punter} optionally claims an edge.`;
-            } else if (obj.splurges) {
-                return `Player ${obj.splurges.punter} splurges.;`
+            } else if (obj.splurge) {
+                return `Player ${obj.splurge.punter} splurges.;`
             } else if (obj.claim) {
                 return `Player ${obj.claim.punter} claims an edge.`;
+            } else if (obj.pass) {
+                return `Player ${obj.pass.punter} passes this turn.`;
             }
             return `Unknown move`;
         }
