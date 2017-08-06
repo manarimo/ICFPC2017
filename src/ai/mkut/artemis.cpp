@@ -181,19 +181,10 @@ double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPa
     return minPathScore[xdame] = ret;
 }
 
-Result move(Game &game, State &state) {
-    vector<vector<double> > potentials(game.n, vector<double>(game.mines));
-    for (int i = 0; i < game.mines; i++) {
-        potentials[game.mine[i]][i] = 1.;
-    }
-    vector<vector<set<int> > > sources(game.n, vector<set<int> >(game.mines));
-    for (int i = 0; i < game.mines; i++) {
-        sources[game.mine[i]][i].insert(game.mine[i]);
-    }
-
+vector<double> edgeScore(Game &game, State &state, int punterId) {
     UnionFind uf(game.n);
     for (int i = 0; i < game.m; i++) {
-        if (game.edge[i].owner == game.punter_id) {
+        if (game.edge[i].owner == punterId) {
             uf.unite(game.edge[i].to, game.edge[i].from);
         }
     }
@@ -302,6 +293,18 @@ Result move(Game &game, State &state) {
         map<pair<int, int>, double> minPathScore;
         getMinPathScore(score, minPathScore, pathNum, dist, dist2[i], es, game, uf, start);
     }
+    return score;
+}
+
+Result move(Game &game, State &state) {
+    vector<double> score = edgeScore(game, state, game.punter_id);
+    for (int i = 0; i < game.punter; i++) {
+        if (i == game.punter_id) continue;
+        vector<double> enemyScore = edgeScore(game, state, i);
+        for (int j = 0; j < game.m; j++) {
+            score[j] = enemyScore[j] / game.punter;
+        }
+    }
 
     double maxScore = 0;
     int maxIdx = -1;
@@ -361,7 +364,7 @@ int main() {
     Settings settings;
     switch (state_map.find(command)->second) {
         case HANDSHAKE:
-            cout << "artemis-v2" << endl;
+            cout << "artemis-v3" << endl;
             break;
         case INIT:
             cin >> game >> settings;
