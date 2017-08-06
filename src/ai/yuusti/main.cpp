@@ -2,8 +2,8 @@
 
 using namespace std;
 
-const int create_node_count = 50;
-const int playout_count = 50000;
+const int create_node_count = 10;
+const int playout_base = 10000;
 double C = 1.2;
 
 struct Edge {
@@ -519,7 +519,7 @@ int main() {
             break;
         case MOVE:
             cin >> game >> settings >> state;
-            result = move(game, state, playout_count / (game.edge.size() * game.punter));
+            result = move(game, state, playout_base / (game.edge.size() * game.punter));
             cout << result.edge << '\n' << result.state << endl;
             break;
         case END:
