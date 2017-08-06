@@ -2,7 +2,7 @@
 
 using namespace std;
 
-const int create_node_count = 2;
+const int create_node_count = 50;
 const int playout_count = 50000;
 double C = 1.2;
 
@@ -123,6 +123,17 @@ vector<vector<int>> calc_dist(const Game &game, bool current = true) {
     return dist;
 }
 
+vector<int> calc_dist(const Game &game, int v, bool current = true) {
+    vector<vector<int>> G(game.n);
+    for (auto &e : game.edge) {
+        if (!current || e.owner == game.punter_id || e.owner == -1) {
+            G[e.from].push_back(e.to);
+            G[e.to].push_back(e.from);
+        }
+    }
+    return bfs(G, v);
+}
+
 struct State {
     vector<vector<int>> dist;
 };
@@ -206,23 +217,40 @@ struct Candidate {
 };
 
 // get candidate moves
-vector<Candidate> get_candidate(const Game &game, int turn, bool all) {
+vector<Candidate> get_candidate(Game &game, int turn, bool all) {
+    auto &edge = game.edge;
     vector<Candidate> rest, cand;
     vector<int> visited(game.n);
     UnionFind uf(game.n);
 
     int current_punter = get_player_id(game.punter_id, game.punter, turn);
-    for (int i = 0; i < game.edge.size(); ++i) {
-        if (game.edge[i].owner == current_punter) {
-            visited[game.edge[i].from] = visited[game.edge[i].to] = 1;
-            uf.unite(game.edge[i].from, game.edge[i].to);
+    for (int i = 0; i < edge.size(); ++i) {
+        if (edge[i].owner == current_punter) {
+            visited[edge[i].from] = visited[edge[i].to] = 1;
+            uf.unite(edge[i].from, edge[i].to);
         }
     }
-    for (int i = 0; i < game.edge.size(); ++i) {
-        if (game.edge[i].owner == -1) {
+    for (int i = 0; i < edge.size(); ++i) {
+        if (edge[i].owner == -1) {
             rest.push_back({i, 1.0});
-            int a = game.edge[i].from;
-            int b = game.edge[i].to;
+
+            edge[i].owner = 1e9;
+            int cnt1 = 0;
+            int cnt2 = 0;
+            auto d1 = calc_dist(game, edge[i].from);
+            auto d2 = calc_dist(game, edge[i].to);
+            edge[i].owner = -1;
+            for (int i = 0; i < game.n; ++i) {
+                if (current_dist[edge[i].from][i] != INF && d1[i] == INF) ++cnt1;
+                if (current_dist[edge[i].to][i] != INF && d1[i] == INF) ++cnt2;
+            }
+            if (1.0 * min(cnt1, cnt2) / game.n > 0.1) {
+                cand.push_back({i, 1.0 + 1.0 * min(cnt1, cnt2) / game.n});
+                continue;
+            }
+
+            int a = edge[i].from;
+            int b = edge[i].to;
             if (!all && (visited[a] || visited[b] || is_mine[a] || is_mine[b])) {
                 double modifier = 1.0;
                 if (uf.same(a, b)) modifier = 0.0;
@@ -236,7 +264,7 @@ vector<Candidate> get_candidate(const Game &game, int turn, bool all) {
     return cand;
 }
 
-using Score = double ;
+using Score = long long;
 
 // get the score of the game
 Score calc_score(const Game &game, const vector<Edge> &edge, int turn) {
@@ -284,7 +312,7 @@ vector<Score> win_rate(const Game &game, vector<Score> score) {
     return result;
 }
 
-vector<Score> random_play(const Game &game, int turn) {
+vector<Score> random_play(Game &game, int turn) {
     auto edge = game.edge;
     auto cand = get_candidate(game, turn, true);
     // 隣接辺からランダム
