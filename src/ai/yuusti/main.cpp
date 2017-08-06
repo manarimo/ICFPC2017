@@ -205,7 +205,7 @@ vector<Candidate> get_candidate(const Game &game, int turn, bool all = false) {
     return cand;
 }
 
-using Score = long long;
+using Score = double ;
 
 // get the score of the game
 Score calc_score(const Game &game, const vector<Edge> &edge, int turn) {
@@ -235,6 +235,22 @@ Score calc_score(const Game &game, const vector<Edge> &edge, int turn) {
 
 Score calc_score(const Game &game, int turn) {
     return calc_score(game, game.edge, turn);
+}
+
+vector<Score> win_rate(const Game &game, vector<Score> score) {
+    vector<pair<Score, int>> score_id;
+    for (int i = 0; i < game.punter; ++i) {
+        score_id.emplace_back(score[i], i);
+    }
+    vector<Score> result(game.punter);
+    sort(score.rbegin(), score.rend());
+    for (int i = 0; i < game.punter; ++i) {
+        if (i <= game.punter / 2) {
+            result[score_id[i].second] = 100.0 / (i + 1);
+        }
+    }
+
+    return result;
 }
 
 vector<Score> random_play(const Game &game, int turn) {
@@ -271,7 +287,7 @@ vector<Score> random_play(const Game &game, int turn) {
     for (int i = 0; i < game.punter; ++i) {
         result.push_back(calc_score(game, edge, i));
     }
-    return result;
+    return win_rate(game, result);
 }
 
 vector<Score> uct_search(Game &game, int turn) {
@@ -300,11 +316,10 @@ vector<Score> uct_search(Game &game, int turn) {
     }
 
     if (idx < 0) {
-        vector<Score> result;
-        for (int i = 0; i < game.punter; ++i) {
-            result.push_back(calc_score(game, i));
-        }
-        return result;
+        vector<Score> score;
+        score.push_back(calc_score(game, turn));
+
+        return win_rate(game, score);
     }
     game.edge[idx].owner = (game.punter_id + turn) % game.punter;
     // This res should be the score of the player playing the turn
