@@ -486,6 +486,8 @@ void extend() {
             int next = edge.to;
             if (edge.used || dist[next] == dist[last] + 1) profit[last] += profit[next] / 2;
         }
+        fprintf(stderr, "%d : %lld\n", last, profit[last]);
+        fflush(stderr);
     }
     
     for (int i = 0; i < graph.size(); i++) {
