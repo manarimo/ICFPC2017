@@ -24,16 +24,16 @@ def add_meta_data(objs):
         ranks = get_rank(scores)
         for j, obj in enumerate(objs):
             obj["performances"][i]["rank"] = ranks[j]
-            if score_max == score_min:
-                obj["performances"][i]["ratio"] = 1
-            else:
-                obj["performances"][i]["ratio"] = (scores[j] - score_min) / (score_max - score_min)
+            obj["performances"][i]["loss_percentage"] = (1.0 - scores[j] / score_max) * 100
+            obj["performances"][i]["ratio"] = max(0, (25 - obj["performances"][i]["loss_percentage"]) / 25)
     return objs
 
 def print_table(objs, headers):
     print("<html><head><style>")
     print_style()
     print("</style></head><body>")
+    print("<h3>Tsuchinoko Report</h3>")
+    print("<p>Benchmark Version: {}".format(objs[0]["version"]))
     print("<table border><thead>")
     print_header(headers)
     print("</thead><tbody>")
@@ -58,14 +58,16 @@ def print_row(obj):
     for perf in obj["performances"]:
         print("<td bgcolor={}><center>".format(calculate_color(perf["ratio"])))
         print("rank: {}<br/>".format(perf["rank"]))
-        print("<b>{}</b><br/><small>max: {}</small><br/>".format(perf["average"], perf["highest"]))
+        print("<b>{}</b><br/>".format(perf["average"]))
+        print("<small>(-{:.1f}%)</small><br/>".format(perf["loss_percentage"]))
+        print("<small>max: {}</small><br/>".format(perf["highest"]))
         print("</center></td>")
     print("</tr>")
 
 def print_style():
     print('table {font-size: 12px; word-wrap:break-word; border-collapse: collapse;}')
     print('table, th, tr, td {border: solid black 1px;}')
-    print('th, td {min-width: 90px; max-width: 100px;}')
+    print('th, td {min-width: 90px; max-width: 90px;}')
 
 def calculate_color(ratio):
     red = [222, 102, 65]
