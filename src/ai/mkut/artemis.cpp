@@ -145,19 +145,19 @@ double getMinPathScore(vector<double>& score, map<int, double>& minPathScore, ma
     if (minPathScore.find(x) != minPathScore.end()) {
         return minPathScore[x];
     }
-    cerr << "IN" << x << endl;
+    //cerr << "IN" << x << endl;
     double ret = 0;
     ret += dist2[x];
     for (int i = 0; i < es[x].size(); i++) {
         Edge& e = game.edge[es[x][i]];
         int to = e.from == x ? e.to : e.from;
-        cerr << dist[x] << "," << dist[to] << endl;
+        //cerr << dist[x] << "," << dist[to] << endl;
         if (dist[x] >= dist[to]) continue;
         double nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, to);
         ret += nscore / game.punter;
         score[es[x][i]] += nscore * pathNum[x] / pathNum[to];
     }
-    cerr << "OUT" << x << " " << ret << endl;
+    //cerr << "OUT" << x << " " << ret << endl;
     return minPathScore[x] = ret;
 }
 
@@ -199,13 +199,13 @@ Result move(Game &game, State &state) {
         }
     }
 
-    cerr << "ES" << endl;
-    for (int i = 0; i < es.size(); i++) {
-        for (int j = 0; j < es[i].size(); j++) {
-            cerr << es[i][j] << " ";
-        }
-        cerr << endl;
-    }
+//    cerr << "ES" << endl;
+//    for (int i = 0; i < es.size(); i++) {
+//        for (int j = 0; j < es[i].size(); j++) {
+//            cerr << es[i][j] << " ";
+//        }
+//        cerr << endl;
+//    }
 
     vector<vector<double> > dist2(game.mines, vector<double>(game.n));
     for (int i = 0; i < game.mines; i++) {
@@ -229,7 +229,6 @@ Result move(Game &game, State &state) {
         int d = 0;
         while (q.size() > 1) {
             int x = q.front(); q.pop();
-            cerr << x << endl;
             if (x == -1) {
                 d++;
                 q.push(-1);
@@ -250,15 +249,15 @@ Result move(Game &game, State &state) {
             }
         }
 
-        cerr << "PATHNUM" << endl;
-        for (map<int, int>::iterator it = pathNum.begin(); it != pathNum.end(); ++it) {
-            cerr << it->first << ":" << it->second << endl;
-        }
-
-        cerr << "DIST" << endl;
-        for (map<int, int>::iterator it = dist.begin(); it != dist.end(); ++it) {
-            cerr << it->first << ":" << it->second << endl;
-        }
+//        cerr << "PATHNUM" << endl;
+//        for (map<int, int>::iterator it = pathNum.begin(); it != pathNum.end(); ++it) {
+//            cerr << it->first << ":" << it->second << endl;
+//        }
+//
+//        cerr << "DIST" << endl;
+//        for (map<int, int>::iterator it = dist.begin(); it != dist.end(); ++it) {
+//            cerr << it->first << ":" << it->second << endl;
+//        }
 
         map<int, double> minPathScore;
         getMinPathScore(score, minPathScore, pathNum, dist, dist2[i], es, game, mine);
@@ -267,10 +266,10 @@ Result move(Game &game, State &state) {
     double maxScore = 0;
     int maxIdx = -1;
 
-    cerr << "SCORE" << endl;
+    //cerr << "SCORE" << endl;
     for (int i = 0; i < game.m; i++) {
         if (game.edge[i].owner == -1) {
-            cerr << i << ":" << score[i] << endl;
+            //cerr << i << ":" << score[i] << endl;
             if (maxScore < score[i]) {
                 maxScore = score[i];
                 maxIdx = i;
@@ -279,7 +278,7 @@ Result move(Game &game, State &state) {
     }
 
     if (maxIdx == -1) {
-        for (int i = 0; i < game.m; i++ {
+        for (int i = 0; i < game.m; i++) {
             if (game.edge[i].owner == -1) {
                 maxIdx = i;
                 break;
