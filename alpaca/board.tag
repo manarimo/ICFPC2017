@@ -131,8 +131,9 @@
             this.scores = {};
             for (let i = 0; i < this.frame; ++i) {
                 const h = this.histories[i];
-                if (h.move.claim) {
-                    this.scores[h.move.claim.punter] = h.score;
+                const obj = h.move.claim || h.move.splurge;
+                if (obj) {
+                    this.scores[obj.punter] = h.score;
                 }
             }
         });
