@@ -141,6 +141,26 @@ struct UnionFind {
     }
 };
 
+double getMinPathScore(vector<double>& score, map<int, double>& minPathScore, map<int, int>& pathNum, map<int, int>& dist, vector<double>& dist2, vector<vector<int> >& es, Game& game, int x) {
+    if (minPathScore.find(x) != minPathScore.end()) {
+        return minPathScore[x];
+    }
+    cerr << "IN" << x << endl;
+    double ret = 0;
+    ret += dist2[x];
+    for (int i = 0; i < es[x].size(); i++) {
+        Edge& e = game.edge[es[x][i]];
+        int to = e.from == x ? e.to : e.from;
+        cerr << dist[x] << "," << dist[to] << endl;
+        if (dist[x] >= dist[to]) continue;
+        double nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, to);
+        ret += nscore / game.punter;
+        score[es[x][i]] += nscore * pathNum[x] / pathNum[to];
+    }
+    cerr << "OUT" << x << " " << ret << endl;
+    return minPathScore[x] = ret;
+}
+
 Result move(Game &game, State &state) {
     vector<vector<double> > potentials(game.n, vector<double>(game.mines));
     for (int i = 0; i < game.mines; i++) {
@@ -163,92 +183,106 @@ Result move(Game &game, State &state) {
         unions[uf.find(i)].push_back(i);
     }
 
-    int depth = 20;
-    while (depth--) {
-//        for (int i = 0; i < game.n; i++) {
-//            for (int j = 0; j < game.mines; j++) {
-//                for (set<int>::iterator it = sources[i][j].begin(); it != sources[i][j].end(); ++it) {
-//                    cerr << (*it) << "_";
-//                }
-//                cerr << " ";
-//            }
-//            cerr << endl;
-//        }
-//        cerr << endl;
-//
-//        for (int i = 0; i < game.n; i++) {
-//            for (int j = 0; j < game.mines; j++) {
-//                cerr << potentials[i][j] << " ";
-//            }
-//            cerr << endl;
-//        }
-//        cerr << endl;
-        vector<vector<double> > nextPotentials = potentials;
-        vector<vector<set<int> > > nextSources = sources;
-        for (int i = 0; i < game.mines; i++) {
-            nextPotentials[game.mine[i]][i] = 1.;
+    vector<double> score(game.m);
+
+    vector<vector<int> > es(game.n);
+    for (int i = 0; i < game.m; i++) {
+        Edge &e = game.edge[i];
+        int from = uf.find(e.from);
+        int to = uf.find(e.to);
+        if (from == to) {
+            continue;
         }
-        for (int i = 0; i < game.m; i++) {
-            Edge &e = game.edge[i];
-            for (int j = 0; j < game.mines; j++) {
-                double p = 0;
-                if (e.owner == game.punter_id) {
-                    p = 1;
-                } else if (e.owner == -1) {
-                    p = 1. / game.punter;
+        if (e.owner == -1) {
+            es[from].push_back(i);
+            es[to].push_back(i);
+        }
+    }
+
+    cerr << "ES" << endl;
+    for (int i = 0; i < es.size(); i++) {
+        for (int j = 0; j < es[i].size(); j++) {
+            cerr << es[i][j] << " ";
+        }
+        cerr << endl;
+    }
+
+    vector<vector<double> > dist2(game.mines, vector<double>(game.n));
+    for (int i = 0; i < game.mines; i++) {
+        for (map<int, vector<int> >::iterator it = unions.begin(); it != unions.end(); ++it) {
+            int x = it->first;
+            double score = 0;
+            for (int j = 0; j < it->second.size(); j++) {
+                int y = it->second[j];
+                score += state.dist[i][y] * state.dist[i][y];
+            }
+            dist2[i][x] = score;
+        }
+    }
+
+    for (int i = 0; i < game.mines; i++) {
+        int mine = uf.find(game.mine[i]);
+        map<int, int> pathNum;
+        map<int, int> dist;
+        queue<int> q; q.push(mine); q.push(-1);
+        pathNum[game.mine[i]] = 1;
+        int d = 0;
+        while (q.size() > 1) {
+            int x = q.front(); q.pop();
+            cerr << x << endl;
+            if (x == -1) {
+                d++;
+                q.push(-1);
+                continue;
+            }
+            if (dist.find(x) != dist.end()) {
+                continue;
+            }
+            dist[x] = d;
+            for (int j = 0; j < es[x].size(); j++) {
+                Edge &e = game.edge[es[x][j]];
+                int to = e.from == x ? e.to : e.from;
+                to = uf.find(to);
+                if (dist.find(to) == dist.end()) {
+                    pathNum[to] += pathNum[x];
+                    q.push(to);
                 }
-                int a = e.from;
-                int b = e.to;
-                if (sources[a][j].find(b) == sources[a][j].end()) {
-                    if (sources[a][j].find(game.mine[j]) != sources[a][j].end()) {
-                        nextSources[a][j].insert(b);
-                        nextSources[b][j].insert(b);
-                    }
-                    nextPotentials[b][j] = 1 - (1 - nextPotentials[b][j]) * (1 - potentials[a][j] * p);
-                }
-                if (sources[b][j].find(a) == sources[b][j].end()) {
-                    if (sources[b][j].find(game.mine[j]) != sources[b][j].end()) {
-                        nextSources[b][j].insert(a);
-                        nextSources[a][j].insert(a);
-                    }
-                    nextPotentials[a][j] = 1 - (1 - nextPotentials[a][j]) * (1 - potentials[b][j] * p);
-                }
-                nextSources[b][j].insert(sources[a][j].begin(), sources[a][j].end());
-                nextSources[a][j].insert(sources[b][j].begin(), sources[b][j].end());
             }
         }
-        potentials = nextPotentials;
-        sources = nextSources;
+
+        cerr << "PATHNUM" << endl;
+        for (map<int, int>::iterator it = pathNum.begin(); it != pathNum.end(); ++it) {
+            cerr << it->first << ":" << it->second << endl;
+        }
+
+        cerr << "DIST" << endl;
+        for (map<int, int>::iterator it = dist.begin(); it != dist.end(); ++it) {
+            cerr << it->first << ":" << it->second << endl;
+        }
+
+        map<int, double> minPathScore;
+        getMinPathScore(score, minPathScore, pathNum, dist, dist2[i], es, game, mine);
     }
 
     double maxScore = 0;
     int maxIdx = -1;
 
+    cerr << "SCORE" << endl;
     for (int i = 0; i < game.m; i++) {
         if (game.edge[i].owner == -1) {
-            double score = 0;
-            for (int j = 0; j < game.mines; j++) {
-                int a = game.edge[i].from;
-                int b = game.edge[i].to;
-                double pa = max(0., potentials[b][j] - potentials[a][j]);
-                double pb = max(0., potentials[a][j] - potentials[b][j]);
-                int roota = uf.find(a);
-                int rootb = uf.find(b);
-                for (int i = 0; i < unions[roota].size(); i++) {
-                    int x = unions[roota][i];
-                    int d = state.dist[j][x];
-                    score += pa * d * d;
-                }
-                for (int i = 0; i < unions[rootb].size(); i++) {
-                    int x = unions[rootb][i];
-                    int d = state.dist[j][x];
-                    score += pb * d * d;
-                }
-            }
-            //cerr << i << ":" << score;
-            if (maxScore < score) {
-                maxScore = score;
+            cerr << i << ":" << score[i] << endl;
+            if (maxScore < score[i]) {
+                maxScore = score[i];
                 maxIdx = i;
+            }
+        }
+    }
+
+    if (maxIdx == -1) {
+        for (int i = 0; i < game.m; i++ {
+            if (game.edge[i].owner == -1) {
+                maxIdx = i;
+                break;
             }
         }
     }
@@ -291,7 +325,7 @@ int main() {
             break;
         case INIT:
             cin >> game >> settings;
-            cerr << game << endl;
+            //cerr << game << endl;
             cout << 0 << endl;  // futures
             cout << init(game) << endl;
             break;
