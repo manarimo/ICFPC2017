@@ -386,38 +386,6 @@ vector<Score> uct_search(Game &game, int turn) {
     return res;
 }
 
-pair<bool, Result> first_move(Game &game, State &state) {
-    for (auto &e: game.edge) {
-        if (e.owner == game.punter_id) {
-            return make_pair(false, Result{});
-        }
-    }
-
-    int idx = -1;
-    long long m = 1e18;
-    priority_queue<long long> q;
-    for (int i = 0; i < game.edge.size(); ++i) {
-        auto &e = game.edge[i];
-        if (e.owner != -1) continue;
-        for (auto &v: game.mine) {
-            long long x = min(current_dist[e.from][v], current_dist[e.to][v]);
-            q.push(x);
-            if (q.size() > game.mines / game.punter + 1) q.pop();
-        }
-        long long sum = 0;
-        while (!q.empty()) {
-            sum += q.top() * q.top();
-            q.pop();
-        }
-        if (sum < m) {
-            m = sum;
-            idx = i;
-        }
-    }
-
-    return make_pair(true, Result{idx, state});
-}
-
 Result move(Game &game, State state, int playout) {
     base_dist = state.dist;
     current_dist = calc_dist(game);
@@ -440,19 +408,26 @@ Result move(Game &game, State state, int playout) {
         int cnt2 = 0;
         auto d1 = calc_dist(game, e.from);
         auto d2 = calc_dist(game, e.to);
+
+        int threshold = game.edge.size() / 10;
+        bool good = false;
+        for (int m1 : game.mine) {
+            for (int m2 : game.mine) {
+                good |= current_dist[m1][m2] < threshold
+                    && (current_dist[m1][e.from] + current_dist[e.to][m2] < current_dist[m1][m2]
+                        || current_dist[m1][e.to] + current_dist[e.from][m2] < current_dist[m1][m2]);
+            }
+        }
+
         for (int j = 0; j < game.n; ++j) {
             if (current_dist[e.from][j] != INF && d1[j] == INF) ++cnt1;
             if (current_dist[e.to][j] != INF && d2[j] == INF) ++cnt2;
         }
-        if ((double)min(cnt1, cnt2) > game.n / 10 + 1) {
+        if ((double)min(cnt1, cnt2) > game.n / 10 + 1 || (good && d1[e.to] >= threshold)) {
             is_bridge[i] = 1;
         }
         e.owner = tmp;
     }
-
-
-    auto fm = first_move(game, state);
-    if (fm.first) return fm.second;
 
     is_mine.resize(game.n);
     for (auto &m: game.mine) {
