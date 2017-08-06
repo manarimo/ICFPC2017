@@ -205,10 +205,12 @@ vector<Candidate> get_candidate(const Game &game, int turn, bool all = false) {
     return cand;
 }
 
+using Score = long long;
+
 // get the score of the game
-long long calc_score(const Game &game, const vector<Edge> &edge, int turn) {
+Score calc_score(const Game &game, const vector<Edge> &edge, int turn) {
     // TODO: too slow
-    long long score = 0;
+    Score score = 0;
     for (auto &mine : game.mine) {
         vector<vector<int>> org(game.n), res(game.n);
         for (auto &e : edge) {
@@ -231,11 +233,11 @@ long long calc_score(const Game &game, const vector<Edge> &edge, int turn) {
     return score;
 }
 
-long long calc_score(const Game &game, int turn) {
+Score calc_score(const Game &game, int turn) {
     return calc_score(game, game.edge, turn);
 }
 
-vector<long long> random_play(const Game &game, int turn) {
+vector<Score> random_play(const Game &game, int turn) {
     auto edge = game.edge;
     auto cand = get_candidate(game, turn);
     // 隣接辺からランダム
@@ -265,14 +267,14 @@ vector<long long> random_play(const Game &game, int turn) {
     }
 
     // score for punters
-    vector<long long> result;
+    vector<Score> result;
     for (int i = 0; i < game.punter; ++i) {
         result.push_back(calc_score(game, edge, i));
     }
     return result;
 }
 
-vector<long long> uct_search(Game &game, int turn) {
+vector<Score> uct_search(Game &game, int turn) {
     long long hash_value = hash_edge(game.edge);
     int &cnt = game_freq[hash_value];
     if (cnt < create_node_count) {
@@ -298,7 +300,7 @@ vector<long long> uct_search(Game &game, int turn) {
     }
 
     if (idx < 0) {
-        vector<long long> result;
+        vector<Score> result;
         for (int i = 0; i < game.punter; ++i) {
             result.push_back(calc_score(game, i));
         }
@@ -306,7 +308,7 @@ vector<long long> uct_search(Game &game, int turn) {
     }
     game.edge[idx].owner = (game.punter_id + turn) % game.punter;
     // This res should be the score of the player playing the turn
-    vector<long long> res = uct_search(game, (turn + 1) % game.punter);
+    vector<Score> res = uct_search(game, (turn + 1) % game.punter);
     game.edge[idx].owner = -1;
 
     // propagate
