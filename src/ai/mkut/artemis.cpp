@@ -70,6 +70,7 @@ ostream &operator<<(ostream &os, const Game &g) {
 struct State {
     vector<vector<int> > dist;
     int numOption;
+    int rTurn;
 };
 
 istream &operator>>(istream &is, State &s) {
@@ -82,7 +83,7 @@ istream &operator>>(istream &is, State &s) {
             is >> s.dist[i][j];
         }
     }
-    is >> s.numOption;
+    is >> s.numOption >> s.rTurn;
     return is;
 }
 
@@ -94,7 +95,7 @@ ostream &operator<<(ostream &os, const State &s) {
             os << ' ' << s.dist[i][j];
         }
     }
-    os << ' ' << s.numOption;
+    os << ' ' << s.numOption << ' ' << s.rTurn;
     return os;
 }
 
@@ -134,6 +135,18 @@ bool canClaim(Edge& e, Settings& settings, State& state, int punterId) {
     return true;
 }
 
+double openProb(Game& game, State& state) {
+    return (1 - (1 - 1. / game.punter) * (1 - 1. / max(1, (game.punter - 1)) * (1. * state.numOption / state.rTurn)));
+}
+
+double occupiedProb(Game& game, State& state) {
+    return 1. / max(1, (game.punter - 1)) * (1. * state.numOption / state.rTurn);
+}
+
+double edgeProb(Game& game, State& state, bool open) {
+    return open ? openProb(game, state) : occupiedProb(game, state);
+}
+
 State init(Game &game) {
     vector<vector<Edge> > es(game.n);
     for (int i = 0; i < game.m; i++) {
@@ -164,7 +177,8 @@ State init(Game &game) {
             }
         }
     }
-    return State{dist, game.mines};
+    int expectedTurns = game.m / game.punter + (game.punter_id < game.m % game.punter ? 1 : 0);
+    return State{dist, game.mines, expectedTurns};
 }
 
 struct UnionFind {
@@ -184,7 +198,7 @@ struct UnionFind {
     }
 };
 
-double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPathScore, map<pair<int, int>, int>& pathNum, map<int, int>& dist, vector<double>& dist2, vector<vector<int> >& es, Game& game, UnionFind& uf, pair<int, int> xdame) {
+double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPathScore, map<pair<int, int>, double>& pathNum, map<int, int>& dist, vector<double>& dist2, vector<vector<int> >& es, Game& game, State& state, UnionFind& uf, pair<int, int> xdame) {
     int x = xdame.first;
     int dame = xdame.second;
     if (minPathScore.find(xdame) != minPathScore.end()) {
@@ -198,18 +212,17 @@ double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPa
         int to = uf.find(e.from) == x ? e.to : e.from;
         to = uf.find(to);
         if (debug) ofs << dist[x] << "," << dist[to] << endl;
-        double nscore;
+        pair<int, int> next;
         if (dist[x] < dist[to]) {
-            pair<int, int> next = make_pair(to, dame);
-            nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, uf, next) * pathNum[xdame] / pathNum[next];
+            next = make_pair(to, dame);
         } else if (dist[x] == dist[to] && dame == 0) {
-            pair<int, int> next = make_pair(to, 1);
-            nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, uf, next) * pathNum[xdame] / pathNum[next];
+            next = make_pair(to, 1);
         } else {
             continue;
         }
-        ret += nscore / game.punter;
-        score[es[x][i]] += nscore * pow(1. / game.punter, dist[x]);
+        double nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, state, uf, next) * pathNum[xdame] * edgeProb(game, state, e.owner == -1) / pathNum[next];
+        ret += nscore * edgeProb(game, state, e.owner == -1);
+        score[es[x][i]] += nscore * pathNum[xdame];
         if (debug) ofs << "edge" << es[x][i] << "/" << score[es[x][i]] << endl;
     }
     if (debug) ofs << "OUT" << x << " " << ret << endl;
@@ -281,7 +294,7 @@ vector<double> edgeScore(Game &game, Settings& settings, State &state, int punte
     for (int i = 0; i < game.mines; i++) {
         int mine = uf.find(game.mine[i]);
         pair<int, int> start = make_pair(mine, 0);
-        map<pair<int, int>, int> pathNum;
+        map<pair<int, int>, double> pathNum;
         map<int, int> dist; dist[mine] = 0;
         set<pair<int, int>> q; q.insert(start);
         pathNum[start] = 1;
@@ -299,12 +312,12 @@ vector<double> edgeScore(Game &game, Settings& settings, State &state, int punte
                     if (debug) ofs << " " << to << endl;
                     if (dist.find(to) == dist.end() || dist[to] == dist[x] + 1) {
                         pair<int, int> next = make_pair(to, dame);
-                        pathNum[next] += pathNum[*it];
+                        pathNum[next] += pathNum[*it] * edgeProb(game, state, e.owner == -1);
                         nq.insert(next);
                         dist[to] = dist[x] + 1;
-                    } else if (dist[to] == d && dame == 0) {
+                    } else if (dist[to] == dist[x] && dame == 0) {
                         pair<int, int> next = make_pair(to, 1);
-                        pathNum[next] += pathNum[*it];
+                        pathNum[next] += pathNum[*it] * edgeProb(game, state, e.owner == -1);
                         nq.insert(next);
                     }
                 }
@@ -315,7 +328,7 @@ vector<double> edgeScore(Game &game, Settings& settings, State &state, int punte
 
         if (debug) {
             ofs << "PATHNUM" << endl;
-            for (map<pair<int, int>, int>::iterator it = pathNum.begin(); it != pathNum.end(); ++it) {
+            for (map<pair<int, int>, double>::iterator it = pathNum.begin(); it != pathNum.end(); ++it) {
                 ofs << it->first.first << "(" << it->first.second << "):" << it->second << endl;
             }
 
@@ -326,7 +339,7 @@ vector<double> edgeScore(Game &game, Settings& settings, State &state, int punte
         }
 
         map<pair<int, int>, double> minPathScore;
-        getMinPathScore(score, minPathScore, pathNum, dist, dist2[i], es, game, uf, start);
+        getMinPathScore(score, minPathScore, pathNum, dist, dist2[i], es, game, state, uf, start);
     }
     return score;
 }
@@ -387,7 +400,9 @@ Result move(Game &game, Settings& settings, State &state) {
         state.numOption -= 1;
     }
 
-    cerr << "numOption=" << state.numOption << endl;
+    state.rTurn = max(1, state.rTurn - 1);
+
+    ofs << "numOption=" << state.numOption << endl;
 
     return Result {maxIdx, state};
 }
