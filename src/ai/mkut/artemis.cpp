@@ -298,14 +298,30 @@ vector<double> edgeScore(Game &game, State &state, int punterId) {
 
 Result move(Game &game, State &state) {
     vector<double> score = edgeScore(game, state, game.punter_id);
+
+    if (debug) ofs << "SCORE (me)" << endl;
+    for (int i = 0; i < game.m; i++) {
+        if (game.edge[i].owner == -1) {
+            if (debug) ofs << i << ":" << score[i] << endl;
+        }
+    }
+
     for (int i = 0; i < game.m; i++) {
         score[i] = score[i] * (game.punter - 1) / game.punter;
     }
     for (int i = 0; i < game.punter; i++) {
         if (i == game.punter_id) continue;
         vector<double> enemyScore = edgeScore(game, state, i);
+
+        if (debug) ofs << "SCORE (" << i << ")" << endl;
         for (int j = 0; j < game.m; j++) {
-            score[j] = enemyScore[j] / game.punter / game.punter;
+            if (game.edge[j].owner == -1) {
+                if (debug) ofs << j << ":" << enemyScore[j] << endl;
+            }
+        }
+
+        for (int j = 0; j < game.m; j++) {
+            score[j] += enemyScore[j] / game.punter / (game.punter - 1);
         }
     }
 
@@ -315,7 +331,6 @@ Result move(Game &game, State &state) {
     if (debug) ofs << "SCORE" << endl;
     for (int i = 0; i < game.m; i++) {
         if (game.edge[i].owner == -1) {
-
             if (debug) ofs << i << ":" << score[i] << endl;
             if (maxScore < score[i]) {
                 maxScore = score[i];
