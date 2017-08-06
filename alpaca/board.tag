@@ -83,6 +83,7 @@
                         }
                         prev = node;
                     });
+                    return acc;
                 }, []);
         }
 
