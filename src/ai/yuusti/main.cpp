@@ -52,9 +52,8 @@ struct UnionFind{
     }
 };
 
-vector<int> is_mine, has_mine, possess;
-vector<vector<int>> base_dist, current_dist, base_group_dist, group_dist;
-UnionFind group;
+vector<int> is_mine;
+vector<vector<int>> base_dist, current_dist, possess;
 
 istream &operator>>(istream &is, Game &g) {
     is >> g.punter >> g.punter_id >> g.n >> g.mines;
@@ -122,19 +121,6 @@ vector<vector<int>> calc_dist(const Game &game, bool current = true) {
         dist[i] = bfs(G, i);
     }
     return dist;
-}
-
-// d[i][j] = distance from i to group j
-vector<vector<int>> calc_group_dist(const Game &game, vector<vector<int>> d) {
-    vector<vector<int>> v;
-    group_dist.resize(game.n);
-    for (int i = 0; i < game.n; ++i) {
-        group_dist[i].resize(game.n, INF);
-        for (int j = 0; j < game.n; ++j) {
-            group_dist[group.find(i)][group.find(j)] = min(group_dist[group.find(i)][group.find(j)], d[i][j]);
-        }
-    }
-    return v;
 }
 
 struct State {
@@ -223,9 +209,13 @@ struct Candidate {
 vector<Candidate> get_candidate(const Game &game, int turn, bool all) {
     vector<Candidate> rest, cand;
     vector<int> visited(game.n);
+    UnionFind uf(game.n);
+
+    int current_punter = get_player_id(game.punter_id, game.punter, turn);
     for (int i = 0; i < game.edge.size(); ++i) {
-        if (game.edge[i].owner == get_player_id(game.punter_id, game.punter, turn)) {
+        if (game.edge[i].owner == current_punter) {
             visited[game.edge[i].from] = visited[game.edge[i].to] = 1;
+            uf.unite(game.edge[i].from, game.edge[i].to);
         }
     }
     for (int i = 0; i < game.edge.size(); ++i) {
@@ -235,9 +225,9 @@ vector<Candidate> get_candidate(const Game &game, int turn, bool all) {
             int b = game.edge[i].to;
             if (!all && (visited[a] || visited[b] || is_mine[a] || is_mine[b])) {
                 double modifier = 1.0;
-                if (group.same(a, b)) modifier = 0.0;
-                else if (possess[group.find(a)] && possess[group.find(b)]) modifier *= 1.5;
-                else if (!(possess[group.find(a)] && possess[group.find(b)])) modifier *= 0.8;
+                if (uf.same(a, b)) modifier = 0.0;
+                else if (possess[current_punter][a] && possess[current_punter][b]) modifier *= 1.5;
+                else if (!possess[current_punter][a] && !possess[current_punter][b]) modifier *= 0.9;
                 cand.push_back({i, modifier});
             }
         }
@@ -410,25 +400,21 @@ pair<bool, Result> first_move(Game &game, State &state) {
 Result move(Game &game, State state, int playout) {
     base_dist = calc_dist(game, false);
     current_dist = calc_dist(game);
-    base_group_dist = calc_group_dist(game, base_dist);
-    group_dist = calc_group_dist(game, current_dist);
-    group = UnionFind(game.n);
-    for (auto &e: game.edge) {
-        if (e.owner == game.punter_id) group.unite(e.from, e.to);
+
+    possess.resize(game.punter);
+    for (int i = 0; i < game.punter; ++i) {
+        possess[i].resize(game.n);
     }
-    possess.resize(game.n);
     for (auto &e: game.edge) {
-        possess[group.find(e.from)] = true;
+        if (e.owner != -1) possess[e.owner][e.from] = possess[e.owner][e.to] = 1;
     }
 
     auto fm = first_move(game, state);
     if (fm.first) return fm.second;
 
     is_mine.resize(game.n);
-    has_mine.resize(game.n);
     for (auto &m: game.mine) {
         is_mine[m] = 1;
-        has_mine[group.find(m)] = true;
     }
 
     long long hash = hash_edge(game.edge);
