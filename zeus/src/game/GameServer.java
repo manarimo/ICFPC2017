@@ -215,6 +215,7 @@ public class GameServer {
             claimedRivers.get(claim.punter).add(river);
             history.add(move);
             skipping.set(punterId, 0);
+            return;
         }
         if (move.splurge != null) {
             if (!settings.splurge) {
