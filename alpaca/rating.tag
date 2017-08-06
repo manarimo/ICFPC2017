@@ -9,6 +9,7 @@
         <tr each="{me in this.names}">
             <th>
                 <p>{me}</p>
+                <p>Rating: {this.ratingData[me].rating}</p>
                 <match-result result="{this.ratingData[me]}" />
             </th>
             <td each="{opp in this.names}" style="{this.calcStyle(me, opp)}">
