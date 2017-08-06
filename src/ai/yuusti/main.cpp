@@ -222,7 +222,7 @@ vector<Candidate> get_candidate(Game &game, int turn, bool all) {
     vector<Candidate> rest, cand;
     vector<int> visited(game.n);
     UnionFind uf(game.n);
-    vector<set<int>> color;
+    vector<set<int>> color(game.n);
 
     int current_punter = get_player_id(game.punter_id, game.punter, turn);
     for (int i = 0; i < edge.size(); ++i) {
