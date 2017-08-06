@@ -11,7 +11,7 @@ SCRIPT_DIR=`dirname $SCRIPT`
 ROOT_DIR=`dirname $SCRIPT_DIR`
 
 # replace sandstar with latest version
-cp $ROOT_DIR/bin/sandstar.rb $AI_DIRECTORY/bin/sandstar
+cp $ROOT_DIR/bin/sandstar.rb $AI_DIRECTORY/bin
 
 cd ${AI_DIRECTORY}
 ./punter $@
