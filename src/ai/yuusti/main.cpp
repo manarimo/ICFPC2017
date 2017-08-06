@@ -426,6 +426,7 @@ Result move(Game &game, State state, int playout) {
         if (e.owner != -1) possess[e.owner][e.from] = possess[e.owner][e.to] = 1;
     }
 
+    is_bridge.resize(game.edge.size());
     for (int i = 0; i < game.edge.size(); ++i) {
         auto &e = game.edge[i];
 
