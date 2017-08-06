@@ -122,6 +122,7 @@ public class GameServer {
             } catch (final Exception e) {
                 System.err.println("ERROR");
                 zombie.set(i, true);
+            } finally {
                 final InputStream errorStream = exec.getErrorStream();
                 final Scanner scanner = new Scanner(errorStream);
                 while (scanner.hasNextLine()) {
@@ -156,8 +157,9 @@ public class GameServer {
                     move = response.toMove();
                     states.set(punterId, response.state);
                 } catch (final Exception e) {
-                    System.err.println("ERROR");
+                    System.err.println("ERROR " + e);
                     zombie.set(punterId, true);
+                } finally {
                     final InputStream errorStream = exec.getErrorStream();
                     final Scanner scanner = new Scanner(errorStream);
                     while (scanner.hasNextLine()) {

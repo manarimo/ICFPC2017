@@ -12,6 +12,7 @@ int P, V, E, M;
 int myId;
 set<int> mines;
 vector<vector<River>> graph;
+vector<bool> owned;
 bool useFuture, useSplurge;
 int timeCounter;
 
@@ -58,6 +59,20 @@ void readState() {
     cin >> useSplurge >> timeCounter;
 }
 
+void calcOwned() {
+    owned.resize(V);
+    for (auto mine : mines) {
+        owned[mine] = true;
+    }
+    for (const auto &row : graph) {
+        for (const River &r : row) {
+            if (r.owner == myId) {
+                owned[r.from] = owned[r.to] = true;
+            }
+        }
+    }
+}
+
 vector<int> tap(int start) {
     vector<int> dist(V, -1);
     vector<River> prev(V);
@@ -78,9 +93,10 @@ vector<int> tap(int start) {
         swap(q[0], q[1]);
     }
     int maxMine = -1;
-    for (auto mine : mines) {
+    for (int mine = 0; mine < V; ++mine) {
         cerr << start << ' ' << mine << ' ' << dist[mine] << endl;
         if (start == mine) continue;
+        if (!owned[mine]) continue;
         if (dist[mine] != -1 && (maxMine == -1 || dist[mine] > dist[maxMine])) {
             maxMine = mine;
         }
@@ -123,18 +139,6 @@ void greedy() {
         }
     }
 
-    vector<bool> owned(V, false);
-    for (auto mine : mines) {
-        owned[mine] = true;
-    }
-    for (const auto &row : graph) {
-        for (const River &r : row) {
-            if (r.owner == myId) {
-                owned[r.from] = owned[r.to] = true;
-            }
-        }
-    }
-
     int ans = -1;
     int ansScore = 0;
     for (const auto &row : graph) {
@@ -150,6 +154,7 @@ void greedy() {
 }
 
 void play() {
+    calcOwned();
     if (useSplurge) {
         ++timeCounter;
 
@@ -167,6 +172,7 @@ void play() {
         }
 
         if (answer.size() >= 2) {
+            cerr << "Time to splurge!!!" << endl;
             cout << -2 << endl;
             for (int id : answer) {
                 cout << id << ' ';
