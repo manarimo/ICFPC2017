@@ -29,7 +29,32 @@ enum Command {
     END
 };
 
-map<int, int> is_mine, possess;
+struct UnionFind{
+    vector<int> par;
+
+    UnionFind(){}
+    UnionFind(int n) {
+        par.resize(n);
+        iota(par.begin(), par.end(), 0);
+    }
+
+    int find(int x) {
+        if (par[x] == x) return x;
+        return par[x] = find(par[x]);
+    }
+
+    void unite(int x, int y) {
+        par[find(x)] = find(y);
+    }
+
+    bool same(int x, int y) {
+        return find(x) == find(y);
+    }
+};
+
+vector<int> is_mine, has_mine;
+vector<vector<int>> base_dist, current_dist, base_group_dist, group_dist;
+UnionFind group;
 
 istream &operator>>(istream &is, Game &g) {
     is >> g.punter >> g.punter_id >> g.n >> g.mines;
@@ -60,7 +85,6 @@ ostream &operator<<(ostream &os, const Game &g) {
     return os;
 }
 
-
 const int INF = static_cast<const int>(1e9);
 
 vector<int> bfs(const vector<vector<int>> &G, int v) {
@@ -85,10 +109,10 @@ vector<int> bfs(const vector<vector<int>> &G, int v) {
     return dist;
 }
 
-vector<vector<int>> calc_dist(const Game &game) {
+vector<vector<int>> calc_dist(const Game &game, bool current = true) {
     vector<vector<int>> G(game.n);
     for (auto &e : game.edge) {
-        if (e.owner == game.punter_id || e.owner == -1) {
+        if (!current || e.owner == game.punter_id || e.owner == -1) {
             G[e.from].push_back(e.to);
             G[e.to].push_back(e.from);
         }
@@ -98,6 +122,19 @@ vector<vector<int>> calc_dist(const Game &game) {
         dist[i] = bfs(G, i);
     }
     return dist;
+}
+
+// d[i][j] = distance from i to group j
+vector<vector<int>> calc_group_dist(const Game &game, vector<vector<int>> d) {
+    vector<vector<int>> v;
+    group_dist.resize(game.n);
+    for (int i = 0; i < game.n; ++i) {
+        group_dist[i].resize(game.n, INF);
+        for (int j = 0; j < game.n; ++j) {
+            group_dist[group.find(i)][group.find(j)] = min(group_dist[group.find(i)][group.find(j)], d[i][j]);
+        }
+    }
+    return v;
 }
 
 struct State {
@@ -183,7 +220,7 @@ struct Candidate {
 };
 
 // get candidate moves
-vector<Candidate> get_candidate(const Game &game, int turn, bool all = false) {
+vector<Candidate> get_candidate(const Game &game, int turn, bool all) {
     vector<Candidate> rest, cand;
     vector<int> visited(game.n);
     for (int i = 0; i < game.edge.size(); ++i) {
@@ -194,9 +231,13 @@ vector<Candidate> get_candidate(const Game &game, int turn, bool all = false) {
     for (int i = 0; i < game.edge.size(); ++i) {
         if (game.edge[i].owner == -1) {
             rest.push_back({i, 1.0});
-            if (visited[game.edge[i].from] || visited[game.edge[i].to]
-                    || is_mine[game.edge[i].from] || is_mine[game.edge[i].to]) {
-                cand.push_back({i, 1.0});
+            int a = game.edge[i].from;
+            int b = game.edge[i].to;
+            if (!all && (visited[a] || visited[b] || is_mine[a] || is_mine[b])) {
+                double modifier = 1.0;
+                if (group.same(a, b)) modifier = 0.0;
+                cand.push_back({i, modifier});
+
             }
         }
     }
@@ -254,7 +295,7 @@ vector<Score> win_rate(const Game &game, vector<Score> score) {
 
 vector<Score> random_play(const Game &game, int turn) {
     auto edge = game.edge;
-    auto cand = get_candidate(game, turn);
+    auto cand = get_candidate(game, turn, true);
     // 隣接辺からランダム
     priority_queue<pair<double, int>> q;
 
@@ -302,7 +343,7 @@ vector<Score> uct_search(Game &game, int turn) {
     double best = -1;
 
     // find the best move so far
-    for (auto &e : get_candidate(game, turn)) {
+    for (auto &e : get_candidate(game, turn, false)) {
         if (!v.ch[e.idx].cnt) {
             idx = e.idx;
             break;
@@ -339,7 +380,6 @@ pair<bool, Result> first_move(Game &game, State &state) {
             return make_pair(false, Result{});
         }
     }
-    auto dist = calc_dist(game);
 
     int idx = -1;
     long long m = 1e18;
@@ -348,7 +388,7 @@ pair<bool, Result> first_move(Game &game, State &state) {
         auto &e = game.edge[i];
         if (e.owner != -1) continue;
         for (auto &v: game.mine) {
-            long long x = min(dist[e.from][v], dist[e.to][v]);
+            long long x = min(current_dist[e.from][v], current_dist[e.to][v]);
             q.push(x);
             if (q.size() > game.mines / game.punter + 1) q.pop();
         }
@@ -367,11 +407,23 @@ pair<bool, Result> first_move(Game &game, State &state) {
 }
 
 Result move(Game &game, State state, int playout) {
+    base_dist = calc_dist(game, false);
+    current_dist = calc_dist(game);
+    base_group_dist = calc_group_dist(game, base_dist);
+    group_dist = calc_group_dist(game, current_dist);
+    group = UnionFind(game.n);
+
     auto fm = first_move(game, state);
     if (fm.first) return fm.second;
 
+    is_mine.resize(game.n);
+    has_mine.resize(game.n);
     for (auto &m: game.mine) {
         is_mine[m] = 1;
+        has_mine[group.find(m)] = true;
+    }
+    for (auto &e: game.edge) {
+        if (e.owner == game.punter_id) group.unite(e.from, e.to);
     }
 
     long long hash = hash_edge(game.edge);
@@ -380,7 +432,7 @@ Result move(Game &game, State state, int playout) {
 
     int idx = -1;
     double best = -1;
-    for (auto &e : get_candidate(game, 0)) {
+    for (auto &e : get_candidate(game, 0, false)) {
 //        cerr << game.edge[e.idx].from << ' ' << game.edge[e.idx].to << ' ' << root.ch[e.idx].ex << ' ' << e.modifier << endl;
         double ucb1 = calc_ucb(root.ch[e.idx].ex, root.ch[e.idx].cnt, root.cnt) * e.modifier;
         if (best >= ucb1) continue;
