@@ -97,11 +97,11 @@ def main():
         "win": per_win_agg[name],
         "lose": per_match_agg[name] - per_win_agg[name] - per_draw_agg[name],
         "draw": per_draw_agg[name],
-        "result": [{
+        "result": {opp: {
             "win": kati[(name, opp)],
             "lose": kati[(opp, name)],
             "draw": draws[(name, opp)]
-        } for opp in all_names]
+        } for opp in all_names}
     } for name in all_names}
     with artifact_path.open("w") as f:
         json.dump(artifact_data, f)
