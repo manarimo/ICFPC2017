@@ -49,13 +49,13 @@ istream &operator>>(istream &is, Game &g) {
 }
 
 ostream &operator<<(ostream &os, const Game &g) {
-    os << g.punter << endl << g.punter_id << endl << g.n << endl << g.mines << endl;
+    os << g.punter << '\n' << g.punter_id << '\n' << g.n << '\n' << g.mines << '\n';
     for (int i = 0; i < g.mines; ++i) {
         os << g.mine[i] << (i == g.mines - 1 ? "": " ");
     }
-    os << endl << g.m << endl;
+    os << '\n' << g.m << '\n';
     for (int i = 0; i < g.m; ++i) {
-        os << g.edge[i].from << ' ' << g.edge[i].to << ' ' << g.edge[i].owner << endl;
+        os << g.edge[i].from << ' ' << g.edge[i].to << ' ' << g.edge[i].owner << '\n';
         auto &e = g.edge[i];
     }
     return os;
@@ -382,7 +382,7 @@ Result move(Game &game, State state, int playout) {
     int idx = -1;
     double best = -1;
     for (auto &e : get_candidate(game, 0)) {
-        cerr << game.edge[e.idx].from << ' ' << game.edge[e.idx].to << ' ' << root.ch[e.idx].ex << ' ' << e.modifier << endl;
+//        cerr << game.edge[e.idx].from << ' ' << game.edge[e.idx].to << ' ' << root.ch[e.idx].ex << ' ' << e.modifier << endl;
         double ucb1 = calc_ucb(root.ch[e.idx].ex, root.ch[e.idx].cnt, root.cnt) * e.modifier;
         if (best >= ucb1) continue;
         best = ucb1, idx = e.idx;
@@ -412,6 +412,9 @@ State init(const Game &game) {
 }
 
 int main() {
+    cin.tie();
+    ios::sync_with_stdio();
+
     string command;
     cin >> command;
 
@@ -432,14 +435,14 @@ int main() {
             break;
         case INIT:
             cin >> game >> settings;
-            cerr << game << endl;
-            cout << 0 << endl;
+//            cerr << game << endl;
+            cout << 0 << '\n';
             cout << init(game) << endl;
             break;
         case MOVE:
             cin >> game >> settings >> state;
             result = move(game, state, playout_count / game.edge.size());
-            cout << result.edge << '\n' << result.state;
+            cout << result.edge << '\n' << result.state << endl;
             break;
         case END:
             break;
