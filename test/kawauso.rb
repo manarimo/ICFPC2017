@@ -2,7 +2,7 @@
 
 cmd = gets.chomp
 case cmd
-  when 'setup'
+  when 'INIT'
     np = gets.to_i
     my = gets.to_i
     nv = gets.to_i
@@ -14,7 +14,7 @@ case cmd
     end
     puts "ho ge fu ga"
     puts "hi ge ha ge"
-  when 'play'
+  when 'MOVE'
     np = gets.to_i
     my = gets.to_i
     nv = gets.to_i
@@ -24,7 +24,7 @@ case cmd
     ne.times do
       edge = gets
     end
-    puts 1
-    puts "ho ge fu ga"
-    puts "hi ge ha ge"
+    puts -2
+    puts "0 1"
+    puts "this is data"
 end
