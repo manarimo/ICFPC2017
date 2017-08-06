@@ -9,23 +9,29 @@ public class Move {
     public Claim claim;
     public Pass pass;
     public Splurge splurge;
+    public Option option;
 
-    private Move(final Claim claim, final Pass pass, final Splurge splurge) {
+    private Move(final Claim claim, final Pass pass, final Splurge splurge, final Option option) {
         this.claim = claim;
         this.pass = pass;
         this.splurge = splurge;
+        this.option = option;
     }
 
     public static Move of(final Claim claim) {
-        return new Move(claim, null, null);
+        return new Move(claim, null, null, null);
     }
 
     public static Move of(final Pass pass) {
-        return new Move(null, pass, null);
+        return new Move(null, pass, null, null);
     }
 
     public static Move of(final Splurge splurge) {
-        return new Move(null, null, splurge);
+        return new Move(null, null, splurge, null);
+    }
+
+    public static Move of(final Option option) {
+        return new Move(null, null, null, option);
     }
 
     public static class Claim {
@@ -60,6 +66,17 @@ public class Move {
                 rivers.add(new River(route.get(i - 1), route.get(i)));
             }
             return rivers;
+        }
+    }
+
+    public static class Option {
+        public int punter;
+        public int source;
+        public int target;
+
+        @JsonIgnore
+        public River toRiver() {
+            return new River(source, target);
         }
     }
 }
