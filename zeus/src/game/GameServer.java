@@ -22,6 +22,7 @@ public class GameServer {
     private final Map map;
     private final java.util.Map<Integer, Set<River>> claimedRivers;
     private final Set<River> remainingRivers;
+    private final Set<River> optionRivers;
     private final List<String> ais;
     private final List<JsonNode> states;
     private final List<Move> history;
@@ -31,6 +32,7 @@ public class GameServer {
     private final List<String> names;
     private final List<Boolean> zombie;
     private final List<Integer> skipping;
+    private final List<Integer> optionCharge;
 
     // siteId of mine -> siteId -> distance
     private final java.util.Map<Integer, java.util.Map<Integer, Integer>> distances;
@@ -42,6 +44,7 @@ public class GameServer {
             claimedRivers.put(i, new HashSet<>());
         }
         remainingRivers = new HashSet<>(map.rivers);
+        optionRivers = new HashSet<>(map.rivers);
         this.ais = ais;
         states = new ArrayList<>();
         for (int i = 0; i < ais.size(); i++) {
@@ -94,6 +97,10 @@ public class GameServer {
         skipping = new ArrayList<>();
         for (int i = 0; i < ais.size(); i++) {
             skipping.add(0);
+        }
+        optionCharge = new ArrayList<>();
+        for (int i = 0; i < ais.size(); i++) {
+            optionCharge.add(map.mines.size());
         }
         System.err.println("Server initialized.");
     }
@@ -220,8 +227,8 @@ public class GameServer {
             return;
         }
         if (move.splurge != null) {
-            if (!settings.splurge) {
-                pass(punterId, "Splurge が有効になっていません。");
+            if (!settings.splurges) {
+                pass(punterId, "Splurges が有効になっていません。");
                 return;
             }
             if (move.splurge.punter != punterId) {
@@ -232,19 +239,66 @@ public class GameServer {
                 pass(punterId, String.format("有給申請 %d日 残有給: %d日", move.splurge.route.size() - 2, skipping.get(punterId)));
                 return;
             }
+            final Set<River> riversToOption = new HashSet<>();
             for (final River river : move.splurge.toRivers()) {
                 if (!containsRiver(river)) {
-                    pass(punterId, "それ、先月までなんですよ。");
+                    if (!settings.options) {
+                        pass(punterId, "それ、取られてますよ。");
+                        return;
+                    }
+                    riversToOption.add(river);
+                }
+            }
+            for (final River river : riversToOption) {
+                if (!containsOptionRiver(river)) {
+                    pass(punterId, "option？ないんだな、それが。");
                     return;
                 }
             }
+            if (optionCharge.get(punterId) < riversToOption.size()) {
+                pass(punterId, "もしかして、option使いすぎ？");
+            }
             for (final River river : move.splurge.toRivers()) {
-                River realRiver = removeRiver(river);
+                final River realRiver;
+                if (containsRiver(river)) {
+                    realRiver = removeRiver(river);
+                } else {
+                    realRiver = removeOptionRiver(river);
+                }
                 claimedRivers.get(move.splurge.punter).add(realRiver);
             }
             history.add(move);
             skipping.set(punterId, 0);
             return;
+        }
+        if (move.option != null) {
+            final Move.Option option = move.option;
+            River river = option.toRiver();
+            if (!settings.options) {
+                pass(punterId, "Options が有効になっていません。");
+                return;
+            }
+            if (option.punter != punterId) {
+                pass(punterId, "他人を騙るのはやめましょう。");
+                return;
+            }
+            if (containsRiver(river)) {
+                pass(punterId, "誰もclaimしてないのにoption使うのはNG。");
+                return;
+            }
+            if (!containsOptionRiver(river)) {
+                pass(punterId, "option？ないんだな、それが。");
+                return;
+            }
+            if (optionCharge.get(punterId) < 1) {
+                pass(punterId, "もしかして、option使いすぎ？");
+            }
+            final River realRiver = removeOptionRiver(river);
+            claimedRivers.get(option.punter).add(realRiver);
+            history.add(move);
+            skipping.set(punterId, 0);
+            return;
+
         }
         pass(punterId, null);
     }
@@ -253,15 +307,28 @@ public class GameServer {
         return remainingRivers.contains(river) || remainingRivers.contains(river.reverse());
     }
 
+    private boolean containsOptionRiver(final River river) {
+        return optionRivers.contains(river) || optionRivers.contains(river.reverse());
+    }
+
     private River removeRiver(final River river) {
-        if (remainingRivers.contains(river)) {
-            remainingRivers.remove(river);
+        return doRemoveRiver(remainingRivers, river);
+    }
+
+    private River removeOptionRiver(final River river) {
+        return doRemoveRiver(optionRivers, river);
+    }
+
+    private static River doRemoveRiver(final Set<River> rivers, final River river) {
+        if (rivers.contains(river)) {
+            rivers.remove(river);
             return river;
         } else {
             final River reverse = river.reverse();
-            remainingRivers.remove(reverse);
+            rivers.remove(reverse);
             return reverse;
         }
+
     }
 
     private Integer findFutureTarget(final int punterId, final int mineSiteId) {

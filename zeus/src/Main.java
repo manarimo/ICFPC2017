@@ -46,7 +46,10 @@ public class Main {
             settings.futures = true;
         }
         if (parse.hasOption("x2")) {
-            settings.splurge = true;
+            settings.splurges = true;
+        }
+        if (parse.hasOption("x3")) {
+            settings.options = true;
         }
 
         final ObjectMapper objectMapper = new ObjectMapper();
@@ -61,6 +64,7 @@ public class Main {
         public ZeusOptions() {
             addOption("x1", false, "Futures 1.0");
             addOption("x2", false, "Splurges 1.0");
+            addOption("x3", false, "Options 1.0");
         }
     }
 }
