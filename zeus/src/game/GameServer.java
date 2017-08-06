@@ -211,10 +211,11 @@ public class GameServer {
                 pass(punterId, "それ、取られてますよ。");
                 return;
             }
-            removeRiver(river);
-            claimedRivers.get(claim.punter).add(river);
+            final River realRiver = removeRiver(river);
+            claimedRivers.get(claim.punter).add(realRiver);
             history.add(move);
             skipping.set(punterId, 0);
+            return;
         }
         if (move.splurge != null) {
             if (!settings.splurge) {
