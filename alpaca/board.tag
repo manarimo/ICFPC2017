@@ -88,7 +88,7 @@
         }
 
         updateSplurges() {
-            this.splurges = this.histories.filter((h, i) => h.move.splurge && i <= this.frame)
+            this.splurges = this.histories.filter((h, i) => h.move.splurge && i < this.frame)
                 .reduce((acc, h) => {
                     let prev = null;
                     h.move.splurge.route.forEach((node, i) => {
