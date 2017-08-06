@@ -62,6 +62,23 @@
             this.update();
         }
 
+        updateSplurges() {
+            this.splurges = this.histories.filter((h, i) => h.move.splurge && i <= this.frame)
+                .reduce((acc, h) => {
+                    let prev = null;
+                    h.move.splurge.route.forEach((node, i) => {
+                        if (prev !== null) {
+                            acc.push({
+                                source: prev,
+                                target: node,
+                                punter: h.move.splurge.punter,
+                            });
+                        }
+                        prev = node;
+                    });
+                }, []);
+        }
+
         refresh(opts) {
             this.sites = opts.state.map.sites;
             this.rivers = opts.state.map.rivers;
@@ -75,10 +92,11 @@
             this.scaleFactor = Math.min(600 / (this.maxX - this.minX), 600 / (this.maxY - this.minY));
             this.scores = {};
             this.histories.forEach((h, i) => {
-                if (h.move.claim) {
+                if (h.move.claim || h.move.splurge) {
                     this.scores[h.move.claim.punter] = h.score;
                 }
             });
+            this.updateSplurges();
 
             this.siteDict = {};
             this.sites.forEach((site) => this.siteDict[site.id] = site);
@@ -100,6 +118,7 @@
             if (this.histories !== opts.state.history) {
                 this.refresh(opts);
             }
+            this.updateSplurges();
             this.scores = {};
             for (let i = 0; i < this.frame; ++i) {
                 const h = this.histories[i];
