@@ -148,7 +148,7 @@ struct UnionFind {
     }
 };
 
-double getMinPathScore(vector<double>& score, map<int, double>& minPathScore, map<int, int>& pathNum, map<int, int>& dist, vector<double>& dist2, vector<vector<int> >& es, Game& game, int x) {
+double getMinPathScore(vector<double>& score, map<int, double>& minPathScore, map<int, int>& pathNum, map<int, int>& dist, vector<double>& dist2, vector<vector<int> >& es, Game& game, UnionFind& uf, int x) {
     if (minPathScore.find(x) != minPathScore.end()) {
         return minPathScore[x];
     }
@@ -157,10 +157,10 @@ double getMinPathScore(vector<double>& score, map<int, double>& minPathScore, ma
     ret += dist2[x];
     for (int i = 0; i < es[x].size(); i++) {
         Edge& e = game.edge[es[x][i]];
-        int to = e.from == x ? e.to : e.from;
+        int to = uf.find(e.from) == x ? e.to : e.from;
         if (debug) ofs << dist[x] << "," << dist[to] << endl;
         if (dist[x] >= dist[to]) continue;
-        double nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, to) * pathNum[x] / pathNum[to];
+        double nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, uf, to) * pathNum[x] / pathNum[to];
         ret += nscore / game.punter;
         score[es[x][i]] += nscore * pow(1. / game.punter, dist[x]);
         if (debug) ofs << "edge" << es[x][i] << "/" << score[es[x][i]] << endl;
@@ -285,7 +285,7 @@ Result move(Game &game, State &state) {
         }
 
         map<int, double> minPathScore;
-        getMinPathScore(score, minPathScore, pathNum, dist, dist2[i], es, game, mine);
+        getMinPathScore(score, minPathScore, pathNum, dist, dist2[i], es, game, uf, mine);
     }
 
     double maxScore = 0;
