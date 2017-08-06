@@ -119,13 +119,15 @@ END
   end
 end
 
-class Move < Struct.new(:action, :punter, :edge)
+class Move < Struct.new(:action, :punter, :edge, :route)
   def self.from_json(json, map)
     if json['claim']
       from = json['claim']['source'].to_i
       to = json['claim']['target'].to_i
       edge_id = map.edge(from, to)
       self.new(:claim, json['claim']['punter'], edge_id)
+    elsif json['splurge']
+      self.new(:splurge, json['splurge']['punter'], route: json['splurge']['route'])
     else
       self.new(:pass, json['punter'], nil)
     end
@@ -148,6 +150,12 @@ class GamePlay < Struct.new(:moves, :state)
     moves = json['move']['moves'].map{|m| Move.from_json(m, state.map)}
     moves.select{|m| m.action == :claim}.each do |move|
       state.map.set_owner(move.punter, move.edge)
+    end
+    moves.select{|m| m.action == :splurge}.each do |splurge|
+      splurge.route.zip(splurge.route[1...splurge.route.size]).each do |a, b|
+        edge_id = state.map.edge(a, b)
+        state.map.set_owner(splurge.punter, edge_id)
+      end
     end
     self.new(moves, state)
   end
