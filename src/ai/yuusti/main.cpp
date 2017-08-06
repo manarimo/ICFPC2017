@@ -52,8 +52,8 @@ struct UnionFind{
     }
 };
 
-vector<int> is_mine, is_bridge;
-vector<vector<int>> base_dist, current_dist, possess;
+vector<int> is_mine, is_bridge, mine_connector;
+vector<vector<int>> base_dist, current_dist, possess, group_dist;
 
 istream &operator>>(istream &is, Game &g) {
     is >> g.punter >> g.punter_id >> g.n >> g.mines;
@@ -245,6 +245,7 @@ vector<Candidate> get_candidate(Game &game, int turn, bool all) {
             if (is_bridge[i] || visited[a] || visited[b] || is_mine[a] || is_mine[b]) {
                 double modifier = 1.0;
                 if (is_bridge[i]) modifier *= 1.2;
+                if (mine_connector[i]) modifier *= 1.2;
                 if (possess[current_punter][a] && possess[current_punter][b]) modifier *= 1.5;
                 else if (!possess[current_punter][a] && !possess[current_punter][b]) modifier *= 0.9;
                 modifier *= (1.0 + (color[a].size() + color[b].size()) / 20.0);
@@ -394,10 +395,23 @@ Result move(Game &game, State state, int playout) {
     for (int i = 0; i < game.punter; ++i) {
         possess[i].resize(game.n);
     }
+
+    UnionFind uf(game.n);
     for (auto &e: game.edge) {
         if (e.owner != -1) possess[e.owner][e.from] = possess[e.owner][e.to] = 1;
+        if (e.owner == game.punter_id) uf.unite(e.from, e.to);
     }
 
+    group_dist.resize(game.n);
+    for (int i = 0; i < game.n; ++i) {
+        group_dist[i].resize(game.n, INF);
+        for (int j = 0; j < game.n; ++j) {
+            group_dist[uf.find(i)][uf.find(j)] = group_dist[uf.find(j)][uf.find(i)]
+                    = min(group_dist[uf.find(i)][uf.find(j)], current_dist[i][j]);
+        }
+    }
+
+    mine_connector.resize(game.edge.size());
     is_bridge.resize(game.edge.size());
     for (int i = 0; i < game.edge.size(); ++i) {
         auto &e = game.edge[i];
@@ -413,9 +427,15 @@ Result move(Game &game, State state, int playout) {
         bool good = false;
         for (int m1 : game.mine) {
             for (int m2 : game.mine) {
-                good |= current_dist[m1][m2] < threshold
-                    && (current_dist[m1][e.from] + current_dist[e.to][m2] < current_dist[m1][m2]
-                        || current_dist[m1][e.to] + current_dist[e.from][m2] < current_dist[m1][m2]);
+                int m1g = uf.find(m1);
+                int m2g = uf.find(m2);
+                int from = uf.find(e.from);
+                int to = uf.find(e.to);
+                if(group_dist[m1g][m2g] < threshold
+                    && (group_dist[m1g][from] + group_dist[to][m2g] < group_dist[m1g][m2g]
+                        || group_dist[m1g][to] + group_dist[from][m2g] < group_dist[m1g][m2g])) {
+                    mine_connector[i] = 1;
+                }
             }
         }
 
@@ -423,7 +443,7 @@ Result move(Game &game, State state, int playout) {
             if (current_dist[e.from][j] != INF && d1[j] == INF) ++cnt1;
             if (current_dist[e.to][j] != INF && d2[j] == INF) ++cnt2;
         }
-        if ((double)min(cnt1, cnt2) > game.n / 10 + 1 || (good && d1[e.to] >= threshold)) {
+        if ((double)min(cnt1, cnt2) > game.n / 10 + 1 || (mine_connector[i] && d1[e.to] >= threshold)) {
             is_bridge[i] = 1;
         }
         e.owner = tmp;
