@@ -53,6 +53,9 @@ def exe(map_path: Path, ai_commands, ruleset=None, tags=None):
 
 
 def ai_command(commit):
+    # replace standstar with the latest version
+    shutil.copy2(Path(ROOT_DIR / "bin" / "sandstar.rb"), Path("/var/ai/{}/bin/".format(commit)))
+
     runner = Path(ROOT_DIR / "bin" / "run_ai.sh")
     return "bash {} {}".format(str(runner), commit)
 
