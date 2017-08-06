@@ -9,9 +9,9 @@
 
 using namespace std;
 
-bool debug  = false;
-ofstream ofs;
-//ofstream ofs("out", ios_base::out | ios_base::app);
+bool debug  = true;
+//ofstream ofs;
+ofstream ofs("out", ios_base::out | ios_base::app);
 
 struct Edge {
     int from;
@@ -158,6 +158,7 @@ double getMinPathScore(vector<double>& score, map<int, double>& minPathScore, ma
     for (int i = 0; i < es[x].size(); i++) {
         Edge& e = game.edge[es[x][i]];
         int to = uf.find(e.from) == x ? e.to : e.from;
+        to = uf.find(to);
         if (debug) ofs << dist[x] << "," << dist[to] << endl;
         if (dist[x] >= dist[to]) continue;
         double nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, uf, to) * pathNum[x] / pathNum[to];
