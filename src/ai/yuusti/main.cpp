@@ -187,8 +187,8 @@ getMinPathScore(vector<double> &score, map<pair<int, int>, double> &minPathScore
             continue;
         }
         double sc = max(enemy[e.from].size(), enemy[e.to].size());
-        if (!is_bridge[game.punter_id][i]) sc /= 10;
         double div = game.punter - sc;
+        if (is_bridge[game.punter_id][i] || !is_bridge[game.punter_id][i] &&bridge_cnt[i] == game.punter - 1 ) div /= game.punter;
         ret += nscore / div;
         score[es[x][i]] += nscore * pow(1. / game.punter, dist[x]);
         if (debug) ofs << "edge" << es[x][i] << "/" << score[es[x][i]] << endl;
