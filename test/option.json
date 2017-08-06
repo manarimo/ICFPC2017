@@ -1,0 +1,46 @@
+10:{"you":""}
+626:{
+  "move": {
+    "moves": [
+      {
+        "option": {
+          "punter": 1,
+          "source": 100,
+          "target": 101
+        }
+      }
+    ]
+  },
+  "state": {
+    "punter": 0,
+    "punters": 2,
+    "map": {
+      "sites": [
+        {
+          "id": 100
+        },
+        {
+          "id": 101
+        },
+        {
+          "id": 102
+        }
+      ],
+      "rivers": [
+        {
+          "source": 100,
+          "target": 101
+        },
+        {
+          "source": 101,
+          "target": 102
+        }
+      ],
+      "mines": [
+        100,
+        101
+      ]
+    },
+    "app_state": "1\n"
+  }
+}

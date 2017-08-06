@@ -5,9 +5,9 @@ require 'open3'
 require 'stringio'
 require 'pp'
 
-class River < Struct.new(:source, :target, :owner)
+class River < Struct.new(:source, :target, :owner1, :owner2)
   def self.from_json(json)
-    self.new(json['source'], json['target'], json['owner'] || -1)
+    self.new(json['source'], json['target'], json['owner1'] || -1, json['owner2'] || -1)
   end
 
   def hash
@@ -22,7 +22,8 @@ class River < Struct.new(:source, :target, :owner)
     {
         source: source,
         target: target,
-        owner: owner
+        owner1: owner1,
+        owner2: owner2
     }
   end
 end
@@ -66,7 +67,12 @@ class Map < Struct.new(:sites, :rivers, :mines)
   end
 
   def set_owner(punter_id, edge_id)
-    id_to_river[edge_id].owner = punter_id
+    river = id_to_river[edge_id]
+    if river.owner1 == -1
+      river.owner1 = punter_id
+    else
+      river.owner2 = punter_id
+    end
   end
 
   def to_kyopro
@@ -75,7 +81,7 @@ class Map < Struct.new(:sites, :rivers, :mines)
 #{mines.size}
 #{mines.map{|m| site_to_id[m]}.join(' ')}
 #{rivers.size}
-#{rivers.map{|r| "#{site_to_id[r.source]} #{site_to_id[r.target]} #{r.owner}"}.join("\n")}
+#{rivers.map{|r| "#{site_to_id[r.source]} #{site_to_id[r.target]} #{r.owner1} #{r.owner2}"}.join("\n")}
 END
   end
 
@@ -134,6 +140,11 @@ class Move < Struct.new(:action, :punter, :edge, :route)
       self.claim(json['claim']['punter'], edge_id)
     elsif json['splurge']
       self.splurge(json['splurge']['punter'], json['splurge']['route'])
+    elsif json['option']
+      from = json['option']['source'].to_i
+      to = json['option']['target'].to_i
+      edge_id = map.edge(from, to)
+      self.option(json['option']['punter'], edge_id)
     else
       self.pass(json['punter'])
     end
@@ -149,6 +160,10 @@ class Move < Struct.new(:action, :punter, :edge, :route)
 
   def self.splurge(punter, sites)
     self.new(:splurge, punter, nil, sites)
+  end
+
+  def self.option(punter, edge)
+    self.new(:option, punter, edge, nil)
   end
 
   def to_hash(map)
@@ -175,6 +190,14 @@ class Move < Struct.new(:action, :punter, :edge, :route)
                 route: route
             }
         }
+      when :option
+        {
+            option: {
+                punter: punter,
+                source: map.edge_of(edge).source,
+                target: map.edge_of(edge).target
+            }
+        }
       else
         raise "Unsupproted action #{action}"
       end
@@ -186,7 +209,7 @@ class GamePlay < Struct.new(:moves, :state)
     state = State.from_json(json['state'])
     moves = json['move']['moves'].map{|m| Move.from_json(m, state.map)}
     STDERR.puts json
-    moves.select{|m| m.action == :claim}.each do |move|
+    moves.select{|m| m.action == :claim || m.action == :option}.each do |move|
       state.map.set_owner(move.punter, move.edge)
     end
     moves.select{|m| m.action == :splurge}.each do |splurge|
@@ -303,7 +326,12 @@ END
           obj.state.map.set_owner(move.punter, edge_id)
         end
       else
-        move = Move.claim(obj.state.my_id, edge_id)
+        edge = obj.state.map.edge_of(edge_id)
+        if edge.owner1 == -1
+          move = Move.claim(obj.state.my_id, edge_id)
+        else
+          move = Move.option(obj.state.my_id, edge_id)
+        end
         obj.state.map.set_owner(obj.state.my_id, edge_id)
     end
     obj.state.app_state = stdout.read

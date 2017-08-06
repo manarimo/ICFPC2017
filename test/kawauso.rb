@@ -24,7 +24,6 @@ case cmd
     ne.times do
       edge = gets
     end
-    puts -2
-    puts "0 1"
+    puts 1
     puts "this is data"
 end
