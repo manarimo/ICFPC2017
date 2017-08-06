@@ -35,7 +35,7 @@ def to_df(items, metrics):
 
 
 def main():
-    logs = list(fetch_all_logs())
+    logs = list(row["log"] for row in fetch_all_logs())
 
     match_metrics = [
         ("turns", turns)
