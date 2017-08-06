@@ -42,13 +42,13 @@ istream &operator>>(istream &is, Game &g) {
 }
 
 ostream &operator<<(ostream &os, const Game &g) {
-    os << g.punter << endl << g.punter_id << endl << g.n << endl << g.mines << endl;
+    os << g.punter << '\n' << g.punter_id << '\n' << g.n << '\n' << g.mines << '\n';
     for (int i = 0; i < g.mines; ++i) {
         os << g.mine[i] << (i == g.mines - 1) ? "": " ";
     }
-    os << endl << g.m << endl;
+    os << '\n' << g.m << '\n';
     for (int i = 0; i < g.m; ++i) {
-        os << g.edge[i].from << ' ' << g.edge[i].to << ' ' << g.edge[i].owner << endl;
+        os << g.edge[i].from << ' ' << g.edge[i].to << ' ' << g.edge[i].owner << '\n';
         auto &e = g.edge[i];
     }
     return os;
@@ -116,6 +116,9 @@ istream &operator>>(istream &is, Settings &settings) {
 }
 
 int main() {
+    cin.tie(0);
+    cin.sync_with_stdio(false);
+
     string command;
     cin >> command;
 
@@ -136,14 +139,13 @@ int main() {
             break;
         case INIT:
             cin >> game >> settings;
-            cerr << game << endl;
-            cout << 0 << endl;  // futures
+            cout << 0 << '\n';  // futures
             cout << init(game) << endl;
             break;
         case MOVE:
             cin >> game >> settings >> state;
             result = move(game, state);
-            cout << result.edge << '\n' << result.state;
+            cout << result.edge << '\n' << result.state << endl;
             break;
         case END:
             break;
