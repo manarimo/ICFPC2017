@@ -19,7 +19,9 @@ def prob(win, all, draw):
 
 
 def fetch_results_db():
-    with MySQLdb.connect(host="35.194.126.173", user="root", passwd="kaban", db="adlersprung") as conn:
+    try:
+        conn = MySQLdb.connect(host="35.194.126.173", user="root", passwd="kaban", db="adlersprung")
+
         cursor = conn.cursor(DictCursor)
         cursor.execute("SELECT * FROM match_log")
         for row in cursor.fetchall():
@@ -37,6 +39,8 @@ def fetch_results_db():
             for name, rank_score in zip(all_names, rank_scores):
                 punter_rank_scores[name].append(rank_scores)
             yield punter_rank_scores
+    finally:
+        conn.close()
 
 
 def fetch_results_file():
