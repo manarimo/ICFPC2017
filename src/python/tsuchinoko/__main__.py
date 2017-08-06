@@ -12,12 +12,13 @@ ROOT_DIR = Path(__file__).absolute().parent.parent.parent.parent
 LOG_DIR = Path(ROOT_DIR / "logs")
 
 def do_until_success(cmd):
-    for i in range(5):
+    for i in range(3):
         try:
             out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
             return out
         except CalledProcessError as e:
             print("Failed. Try again.")
+    return None
 
 def exe(map_path: Path, ai_commands, ruleset=None):
     ruleset = ruleset or []
@@ -28,6 +29,8 @@ def exe(map_path: Path, ai_commands, ruleset=None):
     cmd.append(str(len(ai_commands)))
     cmd += ai_commands
     out = do_until_success(cmd)
+    if out == None:
+        return None
     out_obj = json.loads(out.decode("utf-8"))
     scores = {}
     for score in out_obj["scores"]:
@@ -82,6 +85,11 @@ def main():
             scores = []
             for i in range(REPEAT):
                 score = exe(Path("map/{}.json".format(map)), ai_commands, args.ruleset)
+                if score == None:
+                    print("Failed to execute...")
+                    scores = [0] * REPEAT
+                    total_score = 0
+                    break
                 scores.append(score)
                 total_score += score
                 print("Score: {}".format(score), flush=True)
