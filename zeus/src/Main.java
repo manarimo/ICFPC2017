@@ -46,7 +46,7 @@ public class Main {
             settings.futures = true;
         }
         if (parse.hasOption("x2")) {
-            settings.splurges = true;
+            settings.splurge = true;
         }
 
         final ObjectMapper objectMapper = new ObjectMapper();
