@@ -43,12 +43,12 @@ def ruleset(ruleset_str):
         return []
     return ruleset_str.strip().split(',')
 
-REPEAT = 5
+REPEAT = 10
 NUM_PLAYERS = [2, 4, 8]
-MAPS = ["lambda", "randomMedium", "randomSparse", "rand1"]
+MAPS = ["lambda", "randomMedium", "randomSparse", "rand1", "rand3"]
 RANDOM_AI = "6758e6b36e9b185501ea5d2731b98a5f396f2c67"
 
-BENCHMARK_VERSION = 1
+BENCHMARK_VERSION = 2
 
 def main():
     print(ROOT_DIR)
