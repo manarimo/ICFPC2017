@@ -120,12 +120,12 @@ istream &operator>>(istream &is, State &s) {
 
 ostream &operator<<(ostream &os, const State &s) {
     int n = s.dist.size();
-    os << n << '\n';
+    os << n;
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
             os << ' ' << s.dist[i][j];
         }
-        cout << '\n';
+        cout << ' ';
     }
     return os;
 }
