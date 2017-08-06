@@ -291,15 +291,14 @@ Result move(Game &game, State &state) {
     double maxScore = 0;
     int maxIdx = -1;
 
-    if (debug) {
-        ofs << "SCORE" << endl;
-        for (int i = 0; i < game.m; i++) {
-            if (game.edge[i].owner == -1) {
-                ofs << i << ":" << score[i] << endl;
-                if (maxScore < score[i]) {
-                    maxScore = score[i];
-                    maxIdx = i;
-                }
+    if (debug) ofs << "SCORE" << endl;
+    for (int i = 0; i < game.m; i++) {
+        if (game.edge[i].owner == -1) {
+
+            if (debug) ofs << i << ":" << score[i] << endl;
+            if (maxScore < score[i]) {
+                maxScore = score[i];
+                maxIdx = i;
             }
         }
     }
