@@ -54,11 +54,11 @@
             if (obj.option) {
                 return `Player ${obj.option.punter} optionally claims an edge.`;
             } else if (obj.splurge) {
-                return `Player ${obj.splurge.punter} splurges.;`
+                return `Player ${obj.splurge.punter} splurges.`;
             } else if (obj.claim) {
                 return `Player ${obj.claim.punter} claims an edge.`;
             } else if (obj.pass) {
-                return `Player ${obj.pass.punter} passes this turn.`;
+                return `Player ${obj.pass.punter} skips this turn.`;
             }
             return `Unknown move`;
         }
