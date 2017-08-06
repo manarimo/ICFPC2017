@@ -96,11 +96,12 @@ class UnionFind {
     private:
     vector<int> parent;
     vector<vector<int>> mines;
-} uf;
+};
 
 int stage = 0;
 vector<vector<Edge>> graph;
 vector<vector<int>> degree;
+vector<UnionFind> uf;
 vector<vector<int>> all_dist;
 
 void input(bool read_state) {
@@ -112,12 +113,13 @@ void input(bool read_state) {
     scanf("%d", &n);
     scanf("%d", &mine);
     mines.init(n);
-    uf.init(n);
+    uf.resize(punter);
+    for (int i = 0; i < punter; i++) uf[i].init(n);
     for (int i = 0; i < mine; i++) {
         int v;
         scanf("%d", &v);
         mines.add_mine(v, i);
-        uf.add_mine(v, i);
+        for (int j = 0; j < punter; j++) uf[j].add_mine(v, i);
     }
     
     scanf("%d", &m);
@@ -130,13 +132,18 @@ void input(bool read_state) {
         if (owner == -1) {
             graph[from].push_back(Edge(to, i, false));
             graph[to].push_back(Edge(from, i, false));
+            for (int j = 0; j < punter; j++) {
+                if (j == punter_id) continue;
+                uf[j].unite(from, to);
+            }
         } else if (owner == punter_id) {
             graph[from].push_back(Edge(to, i, true));
             graph[to].push_back(Edge(from, i, true));
-            uf.unite(from, to);
+            uf[punter_id].unite(from, to);
         } else {
             degree[owner][from]++;
             degree[owner][to]++;
+            uf[owner].unite(from, to);
         }
     }
     
@@ -319,7 +326,7 @@ void connect(int v1, int v2) {
 }
 
 void connect() {
-    int v1 = -1, v2 = -1;
+    int component = 0, v1 = -1, v2 = -1;
     double best = 0;
     vector<bool> used(mines.get_count());
     vector<bool> visited(graph.size());
@@ -328,12 +335,17 @@ void connect() {
     deque<int> q;
     
     for (int mine : mines.get_mines()) {
+        component = max(component, (int)uf[punter_id].get_mines(mine).size());
+    }
+    
+    for (int mine : mines.get_mines()) {
         if (used[mines.get_num(mine)]) continue;
+        if (component > mines.get_count() / 2 && uf[punter_id].get_mines(mine).size() != component) continue;
         
         for (int i = 0; i < graph.size(); i++) visited[i] = false;
         for (int i = 0; i < graph.size(); i++) checked[i] = false;
         for (int i = 0; i < graph.size(); i++) dist[i] = INF;
-        checked[uf.find(mine)] = true;
+        checked[uf[punter_id].find(mine)] = true;
         dist[mine] = 0;
         q.push_back(mine);
         
@@ -344,14 +356,14 @@ void connect() {
             if (visited[last]) continue;
             visited[last] = true;
             if (dist[last] == 0 && mines.is_mine(last)) used[mines.get_num(mine)] = true;
-            if (uf.get_mines(last).size() > 0 && !checked[uf.find(last)]) {
-                double score = (double)uf.get_size(last) * uf.get_size(mine) / dist[last];
+            if (uf[punter_id].get_mines(last).size() > 0 && !checked[uf[punter_id].find(last)]) {
+                double score = (double)uf[punter_id].get_size(last) * uf[punter_id].get_size(mine) / dist[last];
                 if (score > best) {
                     best = score;
                     v1 = mine;
                     v2 = last;
                 }
-                checked[uf.find(last)] = true;
+                checked[uf[punter_id].find(last)] = true;
             }
             
             for (const Edge& edge : graph[last]) {
@@ -380,7 +392,7 @@ void connect() {
 }
 
 void surround() {
-    int id = -1;
+    int best = 0, id = -1;
     vector<pair<int, int>> order;
     
     for (int mine : mines.get_mines()) {
@@ -395,16 +407,22 @@ void surround() {
     for (int i = 0; i < order.size(); i++) {
         int mine = order[i].second;
         for (const Edge& edge : graph[mine]) {
+            int count = 0;
             if (edge.used) continue;
             for (int j = 0; j < punter; j++) {
                 if (j == punter_id) continue;
+                if (uf[j].get_mines(mine).size() == 1) continue;
                 if (degree[j][mine] == 0 && degree[j][edge.to] > 0) output(edge.id);
-                if (degree[j][mine] == 0 && id == -1) id = edge.id;
+                if (degree[j][mine] == 0) count++;
+            }
+            if (count > best) {
+                best = count;
+                id = edge.id;
             }
         }
     }
     
-    if (id >= 0) {
+    if (best > 0) {
         output(id);
     } else {
         stage++;
@@ -428,8 +446,8 @@ void extend() {
         int last = q.front();
         q.pop();
         
-        if (!uf.used(last)) {
-            for (int mine : uf.get_mines(parent[last])) {
+        if (!uf[punter_id].used(last)) {
+            for (int mine : uf[punter_id].get_mines(parent[last])) {
                 profit[last] += (long long)all_dist[mine][last] * all_dist[mine][last];
             }
         }
@@ -446,9 +464,9 @@ void extend() {
     for (int i = 0; i < graph.size(); i++) {
         for (const Edge& edge : graph[i]) {
             int from = i, to = edge.to;
-            if (edge.used || uf.same(from, to)) continue;
-            if (!uf.used(from)) swap(from, to);
-            if (uf.used(from)) {
+            if (edge.used || uf[punter_id].same(from, to)) continue;
+            if (!uf[punter_id].used(from)) swap(from, to);
+            if (uf[punter_id].used(from)) {
                 long long score = profit[to];
                 for (const Edge& edge : graph[to]) {
                     score += profit[edge.to] / punter;
