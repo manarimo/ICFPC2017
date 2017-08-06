@@ -52,7 +52,7 @@ struct UnionFind{
     }
 };
 
-vector<int> is_mine;
+vector<int> is_mine, is_bridge;
 vector<vector<int>> base_dist, current_dist, possess;
 
 istream &operator>>(istream &is, Game &g) {
@@ -234,19 +234,8 @@ vector<Candidate> get_candidate(Game &game, int turn, bool all) {
         if (edge[i].owner == -1) {
             rest.push_back({i, 1.0});
 
-            edge[i].owner = 1e9;
-            int cnt1 = 0;
-            int cnt2 = 0;
-            auto d1 = calc_dist(game, edge[i].from);
-            auto d2 = calc_dist(game, edge[i].to);
-            edge[i].owner = -1;
-            for (int i = 0; i < game.n; ++i) {
-                if (current_dist[edge[i].from][i] != INF && d1[i] == INF) ++cnt1;
-                if (current_dist[edge[i].to][i] != INF && d1[i] == INF) ++cnt2;
-            }
-            if (1.0 * min(cnt1, cnt2) / game.n > 0.1) {
-                cand.push_back({i, 1.0 + 1.0 * min(cnt1, cnt2) / game.n});
-                continue;
+            if (is_bridge[i]) {
+                cand.push_back({i, 1.5});
             }
 
             int a = edge[i].from;
@@ -436,6 +425,25 @@ Result move(Game &game, State state, int playout) {
     for (auto &e: game.edge) {
         if (e.owner != -1) possess[e.owner][e.from] = possess[e.owner][e.to] = 1;
     }
+
+    for (int i = 0; i < game.edge.size(); ++i) {
+        auto &e = game.edge[i];
+
+        e.owner = 1e9;
+        int cnt1 = 0;
+        int cnt2 = 0;
+        auto d1 = calc_dist(game, e.from);
+        auto d2 = calc_dist(game, e.to);
+        for (int i = 0; i < game.n; ++i) {
+            if (current_dist[e.from][i] != INF && d1[i] == INF) ++cnt1;
+            if (current_dist[e.to][i] != INF && d1[i] == INF) ++cnt2;
+            if ((double)min(cnt1, cnt2) > game.n / 10) {
+                is_bridge[i] = 1;
+            }
+        }
+        e.owner = -1;
+    }
+
 
     auto fm = first_move(game, state);
     if (fm.first) return fm.second;
