@@ -519,7 +519,7 @@ int main() {
             break;
         case MOVE:
             cin >> game >> settings >> state;
-            result = move(game, state, max(playout_base / (game.edge.size() * game.punter), 10));
+            result = move(game, state, max(playout_base / ((int)game.edge.size() * game.punter), 20));
             cout << result.edge << '\n' << result.state << endl;
             break;
         case END:
