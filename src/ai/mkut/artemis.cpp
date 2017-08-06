@@ -298,11 +298,14 @@ vector<double> edgeScore(Game &game, State &state, int punterId) {
 
 Result move(Game &game, State &state) {
     vector<double> score = edgeScore(game, state, game.punter_id);
+    for (int i = 0; i < game.m; i++) {
+        score[i] = score[i] * (game.punter - 1) / game.punter;
+    }
     for (int i = 0; i < game.punter; i++) {
         if (i == game.punter_id) continue;
         vector<double> enemyScore = edgeScore(game, state, i);
         for (int j = 0; j < game.m; j++) {
-            score[j] = enemyScore[j] / game.punter;
+            score[j] = enemyScore[j] / game.punter / game.punter;
         }
     }
 
