@@ -100,9 +100,12 @@
             this.scaleFactor = Math.min(600 / (this.maxX - this.minX), 600 / (this.maxY - this.minY));
             this.scores = {};
             this.histories.forEach((h, i) => {
-                const obj = h.move.claim || h.move.splurge;
+                const obj = h.move.claim || h.move.splurge || h.move.option;
                 if (obj) {
                     this.scores[obj.punter] = h.score;
+                }
+                if (h.move.option) {
+                    h.move.claim = h.move.option;
                 }
             });
             this.updateSplurges();
@@ -131,7 +134,7 @@
             this.scores = {};
             for (let i = 0; i < this.frame; ++i) {
                 const h = this.histories[i];
-                const obj = h.move.claim || h.move.splurge;
+                const obj = h.move.claim || h.move.splurge || h.move.option;
                 if (obj) {
                     this.scores[obj.punter] = h.score;
                 }
