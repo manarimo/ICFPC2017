@@ -246,6 +246,10 @@ public class GameServer {
                         pass(punterId, "それ、取られてますよ。");
                         return;
                     }
+                    if (doContainsRiver(claimedRivers.get(move.splurge.punter), river)) {
+                        pass(punterId, "自作自演乙");
+                        return;
+                    }
                     riversToOption.add(river);
                 }
             }
@@ -257,6 +261,7 @@ public class GameServer {
             }
             if (optionCharge.get(punterId) < riversToOption.size()) {
                 pass(punterId, "もしかして、option使いすぎ？");
+                return;
             }
             for (final River river : move.splurge.toRivers()) {
                 final River realRiver;
@@ -292,6 +297,11 @@ public class GameServer {
             }
             if (optionCharge.get(punterId) < 1) {
                 pass(punterId, "もしかして、option使いすぎ？");
+                return;
+            }
+            if (doContainsRiver(claimedRivers.get(option.punter), river)) {
+                pass(punterId, "自作自演乙");
+                return;
             }
             final River realRiver = removeOptionRiver(river);
             claimedRivers.get(option.punter).add(realRiver);
@@ -304,11 +314,15 @@ public class GameServer {
     }
 
     private boolean containsRiver(final River river) {
-        return remainingRivers.contains(river) || remainingRivers.contains(river.reverse());
+        return doContainsRiver(remainingRivers, river);
     }
 
     private boolean containsOptionRiver(final River river) {
-        return optionRivers.contains(river) || optionRivers.contains(river.reverse());
+        return doContainsRiver(optionRivers, river);
+    }
+
+    private static boolean doContainsRiver(final Set<River> rivers, final River river) {
+        return rivers.contains(river) || rivers.contains(river.reverse());
     }
 
     private River removeRiver(final River river) {
