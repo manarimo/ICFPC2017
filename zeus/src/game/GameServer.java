@@ -222,6 +222,7 @@ public class GameServer {
                 history.add(move);
                 skipping.set(punterId, 0);
             }
+            return;
         }
         final Move.Claim claim = move.claim;
         River river = claim.toRiver();
@@ -244,8 +245,9 @@ public class GameServer {
             remainingRivers.remove(river);
             return river;
         } else {
-            remainingRivers.remove(river.reverse());
-            return null;
+            final River reverse = river.reverse();
+            remainingRivers.remove(reverse);
+            return reverse;
         }
     }
 
