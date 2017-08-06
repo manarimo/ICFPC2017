@@ -54,7 +54,7 @@ class Map < Struct.new(:sites, :rivers, :mines)
   end
 
   def edge(source, target)
-    river_to_id[River.new(source, target)]
+    river_to_id[River.new(source, target)] || river_to_id[River.new(target, source)]
   end
 
   def edge_of(edge_id)
@@ -152,6 +152,7 @@ class Move < Struct.new(:action, :punter, :edge, :route)
   end
 
   def to_hash(map)
+    STDERR.puts "action is #{action}"
     case action
       when :claim
         {
@@ -184,6 +185,7 @@ class GamePlay < Struct.new(:moves, :state)
   def self.from_json(json)
     state = State.from_json(json['state'])
     moves = json['move']['moves'].map{|m| Move.from_json(m, state.map)}
+    STDERR.puts json
     moves.select{|m| m.action == :claim}.each do |move|
       state.map.set_owner(move.punter, move.edge)
     end
@@ -292,7 +294,7 @@ END
     edge_id = stdout.gets.to_i
     case edge_id
       when -1
-        move = Move.pass(obj.state.my_id, )
+        move = Move.pass(obj.state.my_id)
       when -2
         site_id_list = stdout.gets.split.map(&:to_i)
         move = Move.splurge(obj.state.my_id,site_id_list.map{|i| obj.state.map.site_of(i)})
@@ -309,6 +311,7 @@ END
         state: obj.state.to_hash
     }.merge(move.to_hash(obj.state.map))
     print_json(STDOUT, payload)
+    STDERR.puts payload
     STDERR.puts err
   end
 elsif json.key?('stop')

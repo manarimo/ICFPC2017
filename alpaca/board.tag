@@ -16,6 +16,13 @@
                   riot-y2={this.scaleY(this.siteDict[h.move.claim.target].y)}
                   stroke-width="4"
                   stroke={this.colors[h.move.claim.punter + 1]} />
+            <line each={h in this.splurges}
+                  riot-x1={this.scaleX(this.siteDict[h.source].x)}
+                  riot-y1={this.scaleY(this.siteDict[h.source].y)}
+                  riot-x2={this.scaleX(this.siteDict[h.target].x)}
+                  riot-y2={this.scaleY(this.siteDict[h.target].y)}
+                  stroke-width="4"
+                  stroke={this.colors[h.punter + 1]} />
             <circle each={this.sites} riot-cx={this.scaleX(x)} riot-cy={this.scaleY(y)} r="5" />
             <circle each={id in this.mines} riot-cx={this.scaleX(this.siteDict[id].x)} riot-cy={this.scaleY(this.siteDict[id].y)} r="10" style="fill: red" />
         </svg>
@@ -62,6 +69,24 @@
             this.update();
         }
 
+        updateSplurges() {
+            this.splurges = this.histories.filter((h, i) => h.move.splurge && i <= this.frame)
+                .reduce((acc, h) => {
+                    let prev = null;
+                    h.move.splurge.route.forEach((node, i) => {
+                        if (prev !== null) {
+                            acc.push({
+                                source: prev,
+                                target: node,
+                                punter: h.move.splurge.punter,
+                            });
+                        }
+                        prev = node;
+                    });
+                    return acc;
+                }, []);
+        }
+
         refresh(opts) {
             this.sites = opts.state.map.sites;
             this.rivers = opts.state.map.rivers;
@@ -75,10 +100,12 @@
             this.scaleFactor = Math.min(600 / (this.maxX - this.minX), 600 / (this.maxY - this.minY));
             this.scores = {};
             this.histories.forEach((h, i) => {
-                if (h.move.claim) {
-                    this.scores[h.move.claim.punter] = h.score;
+                const obj = h.move.claim || h.move.splurge;
+                if (obj) {
+                    this.scores[obj.punter] = h.score;
                 }
             });
+            this.updateSplurges();
 
             this.siteDict = {};
             this.sites.forEach((site) => this.siteDict[site.id] = site);
@@ -100,11 +127,13 @@
             if (this.histories !== opts.state.history) {
                 this.refresh(opts);
             }
+            this.updateSplurges();
             this.scores = {};
             for (let i = 0; i < this.frame; ++i) {
                 const h = this.histories[i];
-                if (h.move.claim) {
-                    this.scores[h.move.claim.punter] = h.score;
+                const obj = h.move.claim || h.move.splurge;
+                if (obj) {
+                    this.scores[obj.punter] = h.score;
                 }
             }
         });
