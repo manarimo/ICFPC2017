@@ -142,20 +142,20 @@ void input(bool read_state) {
             graph[from].push_back(Edge(to, i, true, false));
             graph[to].push_back(Edge(from, i, true, false));
             uf[punter_id].unite(from, to);
-            if (owner1 != punter_id) uf[owner1].unite(from, to);
-            if (owner2 != punter_id && owner2 != -1) uf[owner2].unite(from, to);
-        } else {
+        } else if (owner2 == -1) {
+            graph[from].push_back(Edge(to, i, false, true));
+            graph[to].push_back(Edge(from, i, false, true));
+        }
+        
+        if (owner1 != punter_id && owner1 != -1) {
             degree[owner1][from]++;
             degree[owner1][to]++;
             uf[owner1].unite(from, to);
-            if (owner2 == -1) {
-                graph[from].push_back(Edge(to, i, false, true));
-                graph[to].push_back(Edge(from, i, false, true));
-            } else {
-                degree[owner2][from]++;
-                degree[owner2][to]++;
-                uf[owner2].unite(from, to);
-            }
+        }
+        if (owner2 != punter_id && owner2 != -1) {
+            degree[owner2][from]++;
+            degree[owner2][to]++;
+            uf[owner2].unite(from, to);
         }
     }
     
