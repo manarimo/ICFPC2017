@@ -10,7 +10,8 @@
 using namespace std;
 
 bool debug  = false;
-ofstream ofs;
+//ofstream ofs;
+ostream &ofs = cerr;
 //ofstream ofs("out", ios_base::out | ios_base::app);
 
 struct Edge {
@@ -148,11 +149,13 @@ struct UnionFind {
     }
 };
 
-double getMinPathScore(vector<double>& score, map<int, double>& minPathScore, map<int, int>& pathNum, map<int, int>& dist, vector<double>& dist2, vector<vector<int> >& es, Game& game, UnionFind& uf, int x) {
-    if (minPathScore.find(x) != minPathScore.end()) {
-        return minPathScore[x];
+double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPathScore, map<pair<int, int>, int>& pathNum, map<int, int>& dist, vector<double>& dist2, vector<vector<int> >& es, Game& game, UnionFind& uf, pair<int, int> xdame) {
+    int x = xdame.first;
+    int dame = xdame.second;
+    if (minPathScore.find(xdame) != minPathScore.end()) {
+        return minPathScore[xdame];
     }
-    if (debug) ofs << "IN" << x << endl;
+    if (debug) ofs << "IN" << x << "(" << dame << ")" << endl;
     double ret = 0;
     ret += dist2[x];
     for (int i = 0; i < es[x].size(); i++) {
@@ -160,14 +163,22 @@ double getMinPathScore(vector<double>& score, map<int, double>& minPathScore, ma
         int to = uf.find(e.from) == x ? e.to : e.from;
         to = uf.find(to);
         if (debug) ofs << dist[x] << "," << dist[to] << endl;
-        if (dist[x] >= dist[to]) continue;
-        double nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, uf, to) * pathNum[x] / pathNum[to];
+        double nscore;
+        if (dist[x] < dist[to]) {
+            pair<int, int> next = make_pair(to, dame);
+            nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, uf, next) * pathNum[xdame] / pathNum[next];
+        } else if (dist[x] == dist[to] && dame == 0) {
+            pair<int, int> next = make_pair(to, 1);
+            nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, uf, next) * pathNum[xdame] / pathNum[next];
+        } else {
+            continue;
+        }
         ret += nscore / game.punter;
         score[es[x][i]] += nscore * pow(1. / game.punter, dist[x]);
         if (debug) ofs << "edge" << es[x][i] << "/" << score[es[x][i]] << endl;
     }
     if (debug) ofs << "OUT" << x << " " << ret << endl;
-    return minPathScore[x] = ret;
+    return minPathScore[xdame] = ret;
 }
 
 Result move(Game &game, State &state) {
@@ -243,29 +254,32 @@ Result move(Game &game, State &state) {
 
     for (int i = 0; i < game.mines; i++) {
         int mine = uf.find(game.mine[i]);
-        map<int, int> pathNum;
-        map<int, int> dist;
-        set<int> vis;
-        set<int> q; q.insert(mine);
-        pathNum[mine] = 1;
+        pair<int, int> start = make_pair(mine, 0);
+        map<pair<int, int>, int> pathNum;
+        map<int, int> dist; dist[mine] = 0;
+        set<pair<int, int>> q; q.insert(start);
+        pathNum[start] = 1;
         int d = 0;
         for (int d = 0; !q.empty(); d++) {
-            set<int> nq;
-            for (set<int>::iterator it = q.begin(); it != q.end(); ++it) {
-                vis.insert(*it);
-            }
-            for (set<int>::iterator it = q.begin(); it != q.end(); ++it) {
-                int x = *it;
-                if (debug) ofs << x << endl;
-                dist[x] = d;
+            set<pair<int, int>> nq;
+            for (set<pair<int, int> >::iterator it = q.begin(); it != q.end(); ++it) {
+                int x = it->first;
+                int dame = it->second;
+                if (debug) ofs << x << "," << dame << endl;
                 for (int j = 0; j < es[x].size(); j++) {
                     Edge &e = game.edge[es[x][j]];
                     int to = uf.find(e.from) == x ? e.to : e.from;
                     to = uf.find(to);
                     if (debug) ofs << " " << to << endl;
-                    if (vis.find(to) == vis.end()) {
-                        pathNum[to] += pathNum[x];
-                        nq.insert(to);
+                    if (dist.find(to) == dist.end() || dist[to] == dist[x] + 1) {
+                        pair<int, int> next = make_pair(to, dame);
+                        pathNum[next] += pathNum[*it];
+                        nq.insert(next);
+                        dist[to] = d + 1;
+                    } else if (dist[to] == d && dame == 0) {
+                        pair<int, int> next = make_pair(to, 1);
+                        pathNum[next] += pathNum[*it];
+                        nq.insert(next);
                     }
                 }
             }
@@ -275,8 +289,8 @@ Result move(Game &game, State &state) {
 
         if (debug) {
             ofs << "PATHNUM" << endl;
-            for (map<int, int>::iterator it = pathNum.begin(); it != pathNum.end(); ++it) {
-                ofs << it->first << ":" << it->second << endl;
+            for (map<pair<int, int>, int>::iterator it = pathNum.begin(); it != pathNum.end(); ++it) {
+                ofs << it->first.first << "(" << it->first.second << "):" << it->second << endl;
             }
 
             ofs << "DIST" << endl;
@@ -285,8 +299,8 @@ Result move(Game &game, State &state) {
             }
         }
 
-        map<int, double> minPathScore;
-        getMinPathScore(score, minPathScore, pathNum, dist, dist2[i], es, game, uf, mine);
+        map<pair<int, int>, double> minPathScore;
+        getMinPathScore(score, minPathScore, pathNum, dist, dist2[i], es, game, uf, start);
     }
 
     double maxScore = 0;
