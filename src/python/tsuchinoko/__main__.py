@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 import random
 import subprocess
+from subprocess import CalledProcessError
 import itertools
 import time
 import shutil
@@ -9,6 +10,14 @@ import json
 
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent.parent
 LOG_DIR = Path(ROOT_DIR / "logs")
+
+def do_until_success(cmd):
+    for i in range(5):
+        try:
+            out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
+            return out
+        except CalledProcessError as e:
+            print("Failed. Try again.")
 
 def exe(map_path: Path, ai_commands, ruleset=None):
     ruleset = ruleset or []
@@ -18,7 +27,7 @@ def exe(map_path: Path, ai_commands, ruleset=None):
     cmd.append(str(map_path.absolute()))
     cmd.append(str(len(ai_commands)))
     cmd += ai_commands
-    out = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
+    out = do_until_success(cmd)
     out_obj = json.loads(out.decode("utf-8"))
     scores = {}
     for score in out_obj["scores"]:
