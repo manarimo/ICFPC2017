@@ -473,7 +473,7 @@ int main() {
     Settings settings;
     switch (state_map.find(command)->second) {
         case HANDSHAKE:
-            cout << "satori-mu" << endl;
+            cout << "new-latest-mu" << endl;
             break;
         case INIT:
             cin >> game >> settings;
