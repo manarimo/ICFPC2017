@@ -234,16 +234,13 @@ vector<Candidate> get_candidate(Game &game, int turn, bool all) {
         if (edge[i].owner == -1) {
             rest.push_back({i, 1.0});
 
-            if (is_bridge[i]) {
-                cand.push_back({i, 1.5});
-            }
-
             int a = edge[i].from;
             int b = edge[i].to;
-            if (!all && (visited[a] || visited[b] || is_mine[a] || is_mine[b])) {
+            if (uf.same(a, b) || all) continue;
+            if (is_bridge[i] || visited[a] || visited[b] || is_mine[a] || is_mine[b]) {
                 double modifier = 1.0;
-                if (uf.same(a, b)) modifier = 0.0;
-                else if (possess[current_punter][a] && possess[current_punter][b]) modifier *= 1.5;
+                if (is_bridge[i]) modifier *= 1.2;
+                if (possess[current_punter][a] && possess[current_punter][b]) modifier *= 1.5;
                 else if (!possess[current_punter][a] && !possess[current_punter][b]) modifier *= 0.9;
                 cand.push_back({i, modifier});
             }
@@ -415,7 +412,7 @@ pair<bool, Result> first_move(Game &game, State &state) {
 }
 
 Result move(Game &game, State state, int playout) {
-    base_dist = calc_dist(game, false);
+    base_dist = state.dist;
     current_dist = calc_dist(game);
 
     possess.resize(game.punter);
@@ -430,19 +427,20 @@ Result move(Game &game, State state, int playout) {
     for (int i = 0; i < game.edge.size(); ++i) {
         auto &e = game.edge[i];
 
+        int tmp = e.owner;
         e.owner = 1e9;
         int cnt1 = 0;
         int cnt2 = 0;
         auto d1 = calc_dist(game, e.from);
         auto d2 = calc_dist(game, e.to);
-        for (int i = 0; i < game.n; ++i) {
-            if (current_dist[e.from][i] != INF && d1[i] == INF) ++cnt1;
-            if (current_dist[e.to][i] != INF && d1[i] == INF) ++cnt2;
-            if ((double)min(cnt1, cnt2) > game.n / 10) {
-                is_bridge[i] = 1;
-            }
+        for (int j = 0; j < game.n; ++j) {
+            if (current_dist[e.from][j] != INF && d1[j] == INF) ++cnt1;
+            if (current_dist[e.to][j] != INF && d2[j] == INF) ++cnt2;
         }
-        e.owner = -1;
+        if ((double)min(cnt1, cnt2) > game.n / 10 + 1) {
+            is_bridge[i] = 1;
+        }
+        e.owner = tmp;
     }
 
 
@@ -466,7 +464,7 @@ Result move(Game &game, State state, int playout) {
         if (best >= ucb1) continue;
         best = ucb1, idx = e.idx;
     }
-    return Result{idx, {}};
+    return Result{idx, state};
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////
