@@ -2,7 +2,7 @@
 
 using namespace std;
 
-const int create_node_count = 10;
+const int create_node_count = 5;
 const int playout_base = 10000;
 double C = 1.2;
 
@@ -519,7 +519,7 @@ int main() {
             break;
         case MOVE:
             cin >> game >> settings >> state;
-            result = move(game, state, playout_base / (game.edge.size() * game.punter));
+            result = move(game, state, max(playout_base / (game.edge.size() * game.punter), 10));
             cout << result.edge << '\n' << result.state << endl;
             break;
         case END:
