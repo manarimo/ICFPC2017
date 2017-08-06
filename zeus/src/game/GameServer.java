@@ -192,19 +192,38 @@ public class GameServer {
     }
 
     private void pass(final int punterId, final String message) {
+        if (message != null) {
+            System.err.println(message);
+        }
         history.add(Move.of(new Move.Pass(punterId)));
-        System.err.println(message);
         skipping.set(punterId, skipping.get(punterId) + 1);
     }
 
     private void handle(final Move move, final int punterId) throws IOException {
-        if (move.claim == null) {
-            pass(punterId, null);
-            return;
+        if (move.claim != null) {
+            final Move.Claim claim = move.claim;
+            River river = claim.toRiver();
+            if (claim.punter != punterId) {
+                pass(punterId, "他人を騙るのはやめましょう。");
+                return;
+            }
+            if (!containsRiver(river)) {
+                pass(punterId, "それ、取られてますよ。");
+                return;
+            }
+            removeRiver(river);
+            claimedRivers.get(claim.punter).add(river);
+            history.add(move);
+            skipping.set(punterId, 0);
         }
         if (move.splurge != null) {
             if (!settings.splurge) {
-                pass(punterId, "Splurges が有効になっていません。");
+                pass(punterId, "Splurge が有効になっていません。");
+                return;
+            }
+            if (move.splurge.punter != punterId) {
+                pass(punterId, "他人を騙るのはやめましょう。");
+                return;
             }
             if (move.splurge.route.size() - 2 > skipping.get(punterId)) {
                 pass(punterId, String.format("有給申請 %d日 残有給: %d日", move.splurge.route.size() - 2, skipping.get(punterId)));
@@ -219,21 +238,12 @@ public class GameServer {
             for (final River river : move.splurge.toRivers()) {
                 River realRiver = removeRiver(river);
                 claimedRivers.get(move.splurge.punter).add(realRiver);
-                history.add(move);
-                skipping.set(punterId, 0);
             }
+            history.add(move);
+            skipping.set(punterId, 0);
             return;
         }
-        final Move.Claim claim = move.claim;
-        River river = claim.toRiver();
-        if (!remainingRivers.contains(river)) {
-            pass(punterId, "それ、取られてますよ。");
-            return;
-        }
-        remainingRivers.remove(river);
-        claimedRivers.get(claim.punter).add(river);
-        history.add(move);
-        skipping.set(punterId, 0);
+        pass(punterId, null);
     }
 
     private boolean containsRiver(final River river) {
