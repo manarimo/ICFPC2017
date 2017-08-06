@@ -323,7 +323,7 @@ pair<int, int> calc_bridge(int from, int to) {
 void bridge(const vector<pair<double, int>>& order) {
     int id = -1;
     double best = 0;
-    vector<bool> used;
+    vector<bool> used(graph.size());
     
     for (int i = 0; i < order.size(); i++) {
         int last = order[i].second;
