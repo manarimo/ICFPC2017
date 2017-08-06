@@ -455,7 +455,7 @@ int main() {
     Settings settings;
     switch (state_map.find(command)->second) {
         case HANDSHAKE:
-            cout << "artemis-v2" << endl;
+            cout << "pakuri-mu" << endl;
             break;
         case INIT:
             cin >> game >> settings;
