@@ -453,9 +453,9 @@ void extend() {
         
         if (visited[last]) continue;
         visited[last] = true;
-        if (dist[last] > 0) order.push_back(last);
         
-        if (uf[punter_id].get_mines(last).size() == 0) {
+        if (dist[last] > 0) {
+            order.push_back(last);
             for (int mine : uf[punter_id].get_mines(parent[last])) {
                 profit[last] += (long long)all_dist[mine][last] * all_dist[mine][last];
             }
@@ -481,13 +481,10 @@ void extend() {
     }
     
     reverse(order.begin(), order.end());
-    for (int i = 0; i < graph.size(); i++) visited[i] = false;
     for (int last : order) {
-        visited[last] = true;
         for (const Edge& edge : graph[last]) {
             int next = edge.to;
-            if (visited[next] || dist[next] == 0) continue;
-            if (edge.used || dist[next] == dist[last] - 1) profit[next] += profit[last] / 2;
+            if (edge.used || dist[next] == dist[last] + 1) profit[last] += profit[next] / 2;
         }
     }
     
