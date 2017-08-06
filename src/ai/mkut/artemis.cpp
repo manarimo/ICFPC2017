@@ -124,6 +124,23 @@ State init(Game &game) {
     return State{dist};
 }
 
+struct UnionFind {
+    vector<int> data;
+    UnionFind(int n) : data(n, -1) {}
+
+    void unite(int x, int y) {
+        x = find(x); y = find(y);
+        if (x == y) return;
+        if (data[x] < data[y]) swap(x, y);
+        data[x] += data[y];
+        data[y] = x;
+    }
+
+    int find(int x) {
+        return data[x] < 0 ? x : data[x] = find(data[x]);
+    }
+};
+
 Result move(Game &game, State &state) {
     vector<vector<double> > potentials(game.n, vector<double>(game.mines));
     for (int i = 0; i < game.mines; i++) {
@@ -134,8 +151,38 @@ Result move(Game &game, State &state) {
         sources[game.mine[i]][i].insert(game.mine[i]);
     }
 
-    int depth = 10;
+    UnionFind uf(game.n);
+    for (int i = 0; i < game.m; i++) {
+        if (game.edge[i].owner == game.punter_id) {
+            uf.unite(game.edge[i].to, game.edge[i].from);
+        }
+    }
+
+    map<int, vector<int> > unions;
+    for (int i = 0; i < game.n; i++) {
+        unions[uf.find(i)].push_back(i);
+    }
+
+    int depth = 20;
     while (depth--) {
+//        for (int i = 0; i < game.n; i++) {
+//            for (int j = 0; j < game.mines; j++) {
+//                for (set<int>::iterator it = sources[i][j].begin(); it != sources[i][j].end(); ++it) {
+//                    cerr << (*it) << "_";
+//                }
+//                cerr << " ";
+//            }
+//            cerr << endl;
+//        }
+//        cerr << endl;
+//
+//        for (int i = 0; i < game.n; i++) {
+//            for (int j = 0; j < game.mines; j++) {
+//                cerr << potentials[i][j] << " ";
+//            }
+//            cerr << endl;
+//        }
+//        cerr << endl;
         vector<vector<double> > nextPotentials = potentials;
         vector<vector<set<int> > > nextSources = sources;
         for (int i = 0; i < game.mines; i++) {
@@ -183,11 +230,20 @@ Result move(Game &game, State &state) {
             for (int j = 0; j < game.mines; j++) {
                 int a = game.edge[i].from;
                 int b = game.edge[i].to;
-                double pa = (1 - potentials[a][j]) * potentials[b][j];
-                double pb = potentials[a][j] * (1 - potentials[b][j]);
-                int da = state.dist[j][a];
-                int db = state.dist[j][b];
-                score += pa * da * da + pb * db * db;
+                double pa = max(0., potentials[b][j] - potentials[a][j]);
+                double pb = max(0., potentials[a][j] - potentials[b][j]);
+                int roota = uf.find(a);
+                int rootb = uf.find(b);
+                for (int i = 0; i < unions[roota].size(); i++) {
+                    int x = unions[roota][i];
+                    int d = state.dist[j][x];
+                    score += pa * d * d;
+                }
+                for (int i = 0; i < unions[rootb].size(); i++) {
+                    int x = unions[rootb][i];
+                    int d = state.dist[j][x];
+                    score += pb * d * d;
+                }
             }
             //cerr << i << ":" << score;
             if (maxScore < score) {
