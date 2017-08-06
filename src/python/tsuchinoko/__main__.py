@@ -58,7 +58,7 @@ def ruleset(ruleset_str):
 REPEAT = 10
 NUM_PLAYERS = [2, 4, 8]
 MAPS = ["lambda", "randomMedium", "randomSparse", "rand1", "rand3"]
-RANDOM_AI = "e4b38bff0208f4f263b287a9597c22cd22c4f257"
+RANDOM_AI = "c520add11db8fb458c688172ede87548116f8a9d"
 
 BENCHMARK_VERSION = 2
 
