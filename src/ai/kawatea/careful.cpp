@@ -190,7 +190,7 @@ void output(int id) {
 }
 
 void handshake() {
-    puts("kawatea-careful");
+    puts("kawatea-careful-forecast");
 }
 
 void init() {
@@ -432,21 +432,30 @@ void surround() {
 void extend() {
     int id = -1;
     long long best = 0;
-    vector<long long> profit(graph.size());
+    vector<bool> visited(graph.size());
+    vector<int> dist(graph.size());
     vector<int> parent(graph.size());
-    queue<int> q;
+    vector<int> order;
+    vector<long long> profit(graph.size());
+    deque<int> q;
     
+    for (int i = 0; i < graph.size(); i++) dist[i] = INF;
     for (int i = 0; i < graph.size(); i++) parent[i] = -1;
     for (int mine : mines.get_mines()) {
+        dist[mine] = 0;
         parent[mine] = mine;
-        q.push(mine);
+        q.push_back(mine);
     }
     
     while (!q.empty()) {
         int last = q.front();
-        q.pop();
+        q.pop_front();
         
-        if (!uf[punter_id].used(last)) {
+        if (visited[last]) continue;
+        visited[last] = true;
+        if (dist[last] > 0) order.push_back(last);
+        
+        if (uf[punter_id].get_mines(last).size() == 0) {
             for (int mine : uf[punter_id].get_mines(parent[last])) {
                 profit[last] += (long long)all_dist[mine][last] * all_dist[mine][last];
             }
@@ -454,27 +463,43 @@ void extend() {
         
         for (const Edge& edge : graph[last]) {
             int next = edge.to;
-            if (parent[next] == -1) {
-                parent[next] = parent[last];
-                q.push(next);
+            if (visited[next]) continue;
+            if (edge.used) {
+                if (dist[next] > dist[last]) {
+                    dist[next] = dist[last];
+                    parent[next] = parent[last];
+                    q.push_front(next);
+                }
+            } else {
+                if (dist[next] > dist[last] + 1) {
+                    dist[next] = dist[last] + 1;
+                    parent[next] = parent[last];
+                    q.push_back(next);
+                }
             }
         }
     }
     
+    reverse(order.begin(), order.end());
+    for (int i = 0; i < graph.size(); i++) visited[i] = false;
+    for (int last : order) {
+        visited[last] = true;
+        for (const Edge& edge : graph[last]) {
+            int next = edge.to;
+            if (visited[next] || dist[next] == 0) continue;
+            if (edge.used || dist[next] == dist[last] - 1) profit[next] += profit[last] / 2;
+        }
+    }
+    
     for (int i = 0; i < graph.size(); i++) {
-        for (const Edge& edge : graph[i]) {
-            int from = i, to = edge.to;
-            if (edge.used || uf[punter_id].same(from, to)) continue;
-            if (!uf[punter_id].used(from)) swap(from, to);
-            if (uf[punter_id].used(from)) {
-                long long score = profit[to];
-                for (const Edge& edge : graph[to]) {
-                    score += profit[edge.to] / punter;
-                }
-                if (score > best) {
-                    best = score;
-                    id = edge.id;
-                }
+        int last = i;
+        if (dist[last] > 0) continue;
+        for (const Edge& edge : graph[last]) {
+            int next = edge.to;
+            if (edge.used || uf[punter_id].same(last, next)) continue;
+            if (profit[next] > best) {
+                best = profit[next];
+                id = edge.id;
             }
         }
     }
@@ -488,6 +513,12 @@ void extend() {
 
 void prevent() {
     int best = INF, id = -1;
+    
+    for (int mine : mines.get_mines()) {
+        for (const Edge& edge : graph[mine]) {
+            if (!edge.used) output(edge.id);
+        }
+    }
     
     for (int i = 0; i < graph.size(); i++) {
         for (const Edge& edge : graph[i]) {
