@@ -203,7 +203,7 @@ public class GameServer {
             return;
         }
         if (move.splurge != null) {
-            if (!settings.splurges) {
+            if (!settings.splurge) {
                 pass(punterId, "Splurges が有効になっていません。");
             }
             if (move.splurge.route.size() - 2 > skipping.get(punterId)) {
