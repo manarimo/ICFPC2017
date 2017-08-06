@@ -9,8 +9,9 @@
 
 using namespace std;
 
-bool debug  = true;
-ofstream ofs("out", ios_base::out | ios_base::app);
+bool debug  = false;
+ofstream ofs;
+//ofstream ofs("out", ios_base::out | ios_base::app);
 
 struct Edge {
     int from;
