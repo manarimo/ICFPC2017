@@ -160,7 +160,7 @@ struct UnionFind {
 double
 getMinPathScore(vector<double> &score, map<pair<int, int>, double> &minPathScore, map<pair<int, int>, int> &pathNum,
                 map<int, int> &dist, vector<double> &dist_sq, vector<vector<int> > &es, Game &game, UnionFind &uf,
-                vector<int> is_bridge, vector<set<int>> enemy, pair<int, int> xdame) {
+                vector<vector<int>> is_bridge, vector<int> bridge_cnt, vector<set<int>> enemy, pair<int, int> xdame) {
     int x = xdame.first;
     int dame = xdame.second;
     if (minPathScore.find(xdame) != minPathScore.end()) {
@@ -177,17 +177,17 @@ getMinPathScore(vector<double> &score, map<pair<int, int>, double> &minPathScore
         double nscore;
         if (dist[x] < dist[to]) {
             pair<int, int> next = make_pair(to, dame);
-            nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist_sq, es, game, uf, is_bridge, enemy, next) * pathNum[xdame] /
+            nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist_sq, es, game, uf, is_bridge, bridge_cnt, enemy, next) * pathNum[xdame] /
                      pathNum[next];
         } else if (dist[x] == dist[to] && dame == 0) {
             pair<int, int> next = make_pair(to, 1);
-            nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist_sq, es, game, uf, is_bridge, enemy, next) * pathNum[xdame] /
+            nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist_sq, es, game, uf, is_bridge, bridge_cnt, enemy, next) * pathNum[xdame] /
                      pathNum[next];
         } else {
             continue;
         }
         double x = max(enemy[e.from].size(), enemy[e.to].size());
-        if (is_bridge[i] != game.punter) x /= 10;
+        if (!is_bridge[game.punter][i]) x /= 10;
         double div = game.punter - x;
         ret += nscore / div;
         score[es[x][i]] += nscore * pow(1. / game.punter, dist[x]);
@@ -250,9 +250,11 @@ vector<vector<int>> calc_dist_all(const Game &game, int punter_id = -1) {
 }
 
 Result move(Game &game, State &state) {
-    vector<int> is_bridge(game.edge.size());
+    vector<vector<int>> is_bridge(game.punter, vector<int>(game.edge.size()));
+    vector<int> bridge_cnt(game.edge.size());
     vector<set<int>> enemy(static_cast<unsigned long>(game.n));
 
+    int threshold = game.edge.size() / 10;
     // keisanryou zako
     for (int i = 0; i < game.punter; ++i) {
         auto d = calc_dist_all(game, i);
@@ -267,11 +269,12 @@ Result move(Game &game, State &state) {
             int cnt1 = 0;
             int cnt2 = 0;
             for (int j = 0; j < game.n; ++j) {
-                if (d[e.from][j] != INF && d1[j] == INF) ++cnt1;
-                if (d[e.to][j] != INF && d2[j] == INF) ++cnt2;
+                if (d[e.from][j] != INF && d1[j] - d[e.from][j] > threshold) ++cnt1;
+                if (d[e.to][j] != INF && d2[j] - d[e.from][j] > threshold) ++cnt2;
             }
             if ((double) min(cnt1, cnt2) > game.n / 10 + 1) {
-                ++is_bridge[j];
+                is_bridge[i][j];
+                ++bridge_cnt[j];
             }
             e.owner = tmp;
 
@@ -394,7 +397,7 @@ Result move(Game &game, State &state) {
         }
 
         map<pair<int, int>, double> minPathScore;
-        getMinPathScore(score, minPathScore, path_num, dist, dist_sq[i], es, game, uf, is_bridge, enemy, start);
+        getMinPathScore(score, minPathScore, path_num, dist, dist_sq[i], es, game, uf, is_bridge, bridge_cnt, enemy, start);
     }
 
     double maxScore = 0;
