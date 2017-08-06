@@ -160,7 +160,7 @@ double getMinPathScore(vector<double>& score, map<int, double>& minPathScore, ma
         int to = uf.find(e.from) == x ? e.to : e.from;
         to = uf.find(to);
         if (debug) ofs << dist[x] << "," << dist[to] << endl;
-        if (dist[x] > dist[to]) continue;
+        if (dist[x] > dist[to] || dist[x] == 0) continue;
         double nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, uf, to) * pathNum[x] / pathNum[to];
         ret += nscore / game.punter;
         score[es[x][i]] += nscore * pow(1. / game.punter, dist[x]);
