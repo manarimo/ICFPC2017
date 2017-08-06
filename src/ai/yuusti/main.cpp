@@ -286,7 +286,7 @@ vector<Score> random_play(const Game &game, int turn) {
     for (int i = 0; i < game.punter; ++i) {
         result.push_back(calc_score(game, edge, i));
     }
-    return win_rate(game, result);
+    return result;
 }
 
 vector<Score> uct_search(Game &game, int turn) {
@@ -318,7 +318,7 @@ vector<Score> uct_search(Game &game, int turn) {
         vector<Score> score;
         score.push_back(calc_score(game, turn));
 
-        return win_rate(game, score);
+        return score;
     }
     game.edge[idx].owner = (game.punter_id + turn) % game.punter;
     // This res should be the score of the player playing the turn
@@ -430,7 +430,7 @@ int main() {
     Settings settings;
     switch (state_map.find(command)->second) {
         case HANDSHAKE:
-            cout << "nitori-mu" << endl;
+            cout << "satori-mu" << endl;
             break;
         case INIT:
             cin >> game >> settings;
