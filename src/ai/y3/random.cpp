@@ -136,6 +136,7 @@ void end() {
 }
 
 int main() {
+  srand(time(0));
     char protocol[10];
     scanf("%s", protocol);
     
