@@ -6,7 +6,7 @@ import json
 
 
 def turns(match_json):
-    return len(match_json["history"])
+    return len(match_json["history"]) if "history" in match_json else None
 
 
 def tag_name(punter_json):

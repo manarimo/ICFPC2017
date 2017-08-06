@@ -1,11 +1,13 @@
-from pathlib import Path
 import json
-from collections import Counter, defaultdict
-from konohazuku import elo
-import pandas as pd
-import numpy as np
 from argparse import ArgumentParser
+from collections import Counter, defaultdict
+from pathlib import Path
 
+import numpy as np
+import pandas as pd
+
+from konohazuku import elo
+from konohazuku.db import fetch_results_db
 
 LOGS_DIR = Path("/var/local/logs/")
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent.parent
