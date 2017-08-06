@@ -254,7 +254,7 @@ vector<Candidate> get_candidate(Game &game, int turn, bool all) {
             }
         }
     }
-    if (all || cand.empty()) return rest;
+    if (all || rest.size() < 5 || cand.empty()) return rest;
     return cand;
 }
 
@@ -402,9 +402,8 @@ Result move(Game &game, State state, int playout) {
         if (e.owner == game.punter_id) uf.unite(e.from, e.to);
     }
 
-    group_dist.resize(game.n);
+    group_dist.resize(game.n, vector<int>(game.n, INF));
     for (int i = 0; i < game.n; ++i) {
-        group_dist[i].resize(game.n, INF);
         for (int j = 0; j < game.n; ++j) {
             group_dist[uf.find(i)][uf.find(j)] = group_dist[uf.find(j)][uf.find(i)]
                     = min(group_dist[uf.find(i)][uf.find(j)], current_dist[i][j]);
