@@ -111,10 +111,25 @@ func fetchLogHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(log))
 }
 
+func fetchRatingHandler(w http.ResponseWriter, r *http.Request) {
+	f, err := os.Open("/var/lib/jenkins/workspace/Konohazuku/konoha_artifacts/ratings.json")
+	//f, err := os.Open("../test/ratings.json")
+	if err != nil {
+		w.WriteHeader(404)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	defer f.Close()
+
+	w.Header().Set("Content-Type", "application/json")
+	io.Copy(w, f)
+}
+
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", staticHandler)
 	mux.HandleFunc("/api/list_logs", listLogsHandler)
 	mux.HandleFunc("/api/logs/", fetchLogHandler)
+	mux.HandleFunc("/api/rating", fetchRatingHandler)
 	http.ListenAndServe("localhost:8081", mux)
 }
