@@ -222,12 +222,17 @@ vector<Candidate> get_candidate(Game &game, int turn, bool all) {
     vector<Candidate> rest, cand;
     vector<int> visited(game.n);
     UnionFind uf(game.n);
+    vector<set<int>> color;
 
     int current_punter = get_player_id(game.punter_id, game.punter, turn);
     for (int i = 0; i < edge.size(); ++i) {
-        if (edge[i].owner == current_punter) {
-            visited[edge[i].from] = visited[edge[i].to] = 1;
-            uf.unite(edge[i].from, edge[i].to);
+        auto &e = edge[i];
+        if (e.owner == current_punter) {
+            visited[e.from] = visited[e.to] = 1;
+            uf.unite(e.from, e.to);
+        } else if (e.owner != -1){
+            color[e.from].insert(e.owner);
+            color[e.to].insert(e.owner);
         }
     }
     for (int i = 0; i < edge.size(); ++i) {
@@ -242,6 +247,8 @@ vector<Candidate> get_candidate(Game &game, int turn, bool all) {
                 if (is_bridge[i]) modifier *= 1.2;
                 if (possess[current_punter][a] && possess[current_punter][b]) modifier *= 1.5;
                 else if (!possess[current_punter][a] && !possess[current_punter][b]) modifier *= 0.9;
+                modifier *= (1.0 + (color[a].size() + color[b].size()) / 20.0);
+
                 cand.push_back({i, modifier});
             }
         }
