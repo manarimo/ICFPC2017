@@ -15,13 +15,7 @@ def prob(win, all, draw):
     return win / nall if nall > 0 else 0.
 
 
-def main():
-    print("meta analysis tool konohazuku")
-    kati = Counter()
-    draws = Counter()
-    per_win_agg = Counter()
-    per_draw_agg = Counter()
-    per_match_agg = Counter()
+def fetch_results():
     for meta_path in LOGS_DIR.iterdir():
         if not meta_path.name.endswith("meta.json"):
             continue
@@ -43,6 +37,17 @@ def main():
             print("seems to be commit hash. skipping")
             continue
         scores = [np.average(punter_rank_scores[name]) for name in names]
+        yield names, scores
+
+
+def main():
+    print("meta analysis tool konohazuku")
+    kati = Counter()
+    draws = Counter()
+    per_win_agg = Counter()
+    per_draw_agg = Counter()
+    per_match_agg = Counter()
+    for names, scores in fetch_results():
         if scores[0] > scores[1]:
             kati[(names[0], names[1])] += 1
             per_win_agg[names[0]] += 1
