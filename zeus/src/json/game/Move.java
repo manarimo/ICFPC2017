@@ -24,6 +24,10 @@ public class Move {
         return new Move(null, pass, null);
     }
 
+    public static Move of(final Splurge splurge) {
+        return new Move(null, null, splurge);
+    }
+
     public static class Claim {
         public int punter;
         public int source;
