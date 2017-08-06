@@ -275,7 +275,7 @@ Result move(Game &game, State &state) {
                         pair<int, int> next = make_pair(to, dame);
                         pathNum[next] += pathNum[*it];
                         nq.insert(next);
-                        dist[to] = d + 1;
+                        dist[to] = dist[x] + 1;
                     } else if (dist[to] == d && dame == 0) {
                         pair<int, int> next = make_pair(to, 1);
                         pathNum[next] += pathNum[*it];
