@@ -38,15 +38,18 @@ def to_df(items, metrics):
 def main():
     logs = list(json.loads(row["log"]) for row in fetch_all_logs())
 
+    print(1)
     match_metrics = [
         ("turns", turns)
     ]
     match_df = to_df(logs, match_metrics)
+    print(2)
 
     punter_metrics = [
         ("tag_name", tag_name)
     ]
     punter_df = to_df(punters(logs), punter_metrics)
+    print(3)
 
     artifact_dir = Path(ROOT_DIR / "mimi_artifacts")
     if not artifact_dir.exists():
