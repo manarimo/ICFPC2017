@@ -38,6 +38,7 @@ def fetch_results_db():
             punter_rank_scores = defaultdict(list)
             for name, rank_score in zip(all_names, rank_scores):
                 punter_rank_scores[name].append(rank_scores)
+            print(punter_rank_scores)
             yield punter_rank_scores
     finally:
         conn.close()
