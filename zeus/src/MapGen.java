@@ -148,15 +148,15 @@ public class MapGen {
                 double DO = 360.0 * i / n;
                 double x = Math.cos(Math.toRadians(DO)) * 100;
                 double y = Math.sin(Math.toRadians(DO)) * 100;
-                map.sites.add(new Site(j * n + i, x * (j + 2), y * (j + 2)));
+                map.sites.add(new Site(j * n + i, x * (j + 1), y * (j + 1)));
                 if (j != m - 1) map.rivers.add(new River(j * n + i, (j + 1) * n + i));
                 map.rivers.add(new River(j * n + i, (j * n + (i + 1) % n)));
                 if (random.nextDouble() < pMine) {
                     map.mines.add(j * n + i);
                 }
             }
-            System.out.println(new ObjectMapper().writeValueAsString(map));
         }
+        System.out.println(new ObjectMapper().writeValueAsString(map));
     }
 
     public static void main(String[] args) throws IOException {
