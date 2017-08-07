@@ -146,9 +146,9 @@ public class MapGen {
         for (int j = 0; j < m; ++j) {
             for (int i = 0; i < n; ++i) {
                 double DO = 360.0 * i / n;
-                double x = Math.cos(Math.toRadians(DO));
-                double y = Math.sin(Math.toRadians(DO));
-                map.sites.add(new Site(j * n + i, x * (j + 1), y * (j + 1)));
+                double x = Math.cos(Math.toRadians(DO)) * 100;
+                double y = Math.sin(Math.toRadians(DO)) * 100;
+                map.sites.add(new Site(j * n + i, x * (j + 2), y * (j + 2)));
                 if (j != m - 1) map.rivers.add(new River(j * n + i, (j + 1) * n + i));
                 map.rivers.add(new River(j * n + i, (j * n + (i + 1) % n)));
                 if (random.nextDouble() < pMine) {
