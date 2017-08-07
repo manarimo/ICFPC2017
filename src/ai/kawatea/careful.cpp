@@ -153,9 +153,8 @@ class Bridge {
     }
 } bridge;
 
-void input(bool read_state) {
+bool input(bool read_state) {
     int n, m, mine, setting;
-    vector<int> all_mines;
     vector<pair<int, pair<int, int>>> option_edges;
     
     scanf("%d", &punter);
@@ -163,21 +162,17 @@ void input(bool read_state) {
     
     scanf("%d", &n);
     scanf("%d", &mine);
-    all_mines.resize(mine);
     mines.init(n);
     uf.resize(punter);
     for (int i = 0; i < punter; i++) uf[i].init(n);
     for (int i = 0; i < mine; i++) {
         int v;
         scanf("%d", &v);
-        all_mines[i] = v;
+        mines.add_mine(v, i);
+        for (int j = 0; j < punter; j++) uf[j].add_mine(v, i);
     }
     
     scanf("%d", &m);
-    for (int i = 0; i < mine && i * m <= MAX_NUM; i++) {
-        mines.add_mine(all_mines[i], i);
-        for (int j = 0; j < punter; j++) uf[j].add_mine(all_mines[i], i);
-    }
     graph.resize(n);
     degree = vector<vector<int>>(punter, vector<int>(n));
     for (int i = 0; i < m; i++) {
@@ -247,6 +242,8 @@ void input(bool read_state) {
         
         if (stage == 0) bridge.bridge(n);
     }
+    
+    return m * mine <= MAX_NUM;
 }
 
 void output_state() {
@@ -275,7 +272,7 @@ void output(int id, bool option = false) {
 }
 
 void handshake() {
-    puts("kawatea-careful-forecast");
+    puts("kawatea-careful-combined");
 }
 
 void init() {
@@ -761,6 +758,71 @@ void move() {
     disturb();
 }
 
+void greedy() {
+    long long best = -1, id = -1;
+    vector<int> used(mines.get_count());
+    vector<int> dist(graph.size());
+    vector<int> parent(graph.size());
+    queue<int> q;
+    
+    for (int mine : mines.get_mines()) {
+        if (used[mines.get_num(mine)]) continue;
+        
+        for (int i = 0; i < graph.size(); i++) dist[i] = INF;
+        for (int i = 0; i < graph.size(); i++) {
+            if (uf[punter_id].same(mine, i)) {
+                dist[i] = 0;
+                parent[i] = -1;
+                q.push(i);
+            }
+        }
+        
+        while (!q.empty()) {
+            int last = q.front();
+            q.pop();
+            
+            if (mines.is_mine(last)) {
+                if (!uf[punter_id].same(mine, last)) output(parent[last]);
+                used[mines.get_num(mine)] = true;
+            }
+            
+            for (const Edge& edge : graph[last]) {
+                int next = edge.to;
+                if (!edge.used && !edge.option && dist[next] == INF) {
+                    dist[next] = dist[last] + 1;
+                    if (parent[last] == -1) {
+                        parent[next] = edge.id;
+                    } else {
+                        parent[next] = parent[last];
+                    }
+                    q.push(next);
+                }
+            }
+        }
+    }
+    
+    for (int i = 0; i < graph.size(); i++) {
+        int last = i;
+        if (uf[punter_id].get_mines(last).size() == 0) continue;
+        
+        for (const Edge& edge : graph[last]) {
+            int next = edge.to;
+            if (!edge.used && !edge.option && !uf[punter_id].used(next)) {
+                long long profit = 0;
+                for (int mine : uf[punter_id].get_mines(last)) {
+                    profit += (long long)all_dist[mine][next] * all_dist[mine][next];
+                }
+                if (profit > best) {
+                    best = profit;
+                    id = edge.id;
+                }
+            }
+        }
+    }
+    
+    output(id);
+}
+
 void end() {
 }
 
@@ -777,8 +839,11 @@ int main() {
         init();
     } else if (protocol[0] == 'M') {
         // Move
-        input(true);
-        move();
+        if (input(true)) {
+            move();
+        } else {
+            greedy();
+        }
     } else {
         // End
         end();
