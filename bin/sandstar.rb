@@ -272,12 +272,13 @@ def run(cmd, input)
 end
 
 def determine_app(state)
+  srand(Time.now.to_f * 10000)
   if state.map.mines.size == 1
     "#{__dir__}/../build/artemis"
   elsif state.map.rivers.size * state.map.mines.size > 100000
     "#{__dir__}/../build/kawatea_careful"
   else
-    "#{__dir__}/../build/kawatea_careful"
+    ["#{__dir__}/../build/kawatea_careful", "#{__dir__}/../build/artemis"].sample
   end
 end
 
