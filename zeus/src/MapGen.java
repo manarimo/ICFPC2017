@@ -33,7 +33,7 @@ public class MapGen {
             for (int j = 0; j < 4; ++j) {
                 if (j == 0 || j == 3) map.mines.add(id);
                 if (j != 0) map.rivers.add(new River(id - 1, id));
-                map.sites.add(new Site(id++, 10 * i + 5 * j, 10));
+                map.sites.add(new Site(id++, 10 * i + 5 * j, 10 + 10 * i));
             }
         }
         System.out.println(new ObjectMapper().writeValueAsString(map));
