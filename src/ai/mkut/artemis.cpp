@@ -305,6 +305,9 @@ void edgeScore(vector<double>& score, Game &game, Settings& settings, vector<vec
     }
 
     for (int i = 0; i < game.mines; i++) {
+        if (checkTimeOut()) {
+            break;
+        }
         int mine = uf.find(game.mine[i]);
         pair<int, int> start = make_pair(mine, 0);
         map<pair<int, int>, double> pathNum;
@@ -363,6 +366,13 @@ Result move(Game &game, Settings& settings, State &state) {
 
     double maxScore = 0;
     int maxIdx = -1;
+
+    for (int i = 0; i < game.m; i++) {
+        if (maxScore < score[i]) {
+            maxScore = score[i];
+            maxIdx = i;
+        }
+    }
 
     if (maxIdx == -1) {
         for (int i = 0; i < game.m; i++) {
