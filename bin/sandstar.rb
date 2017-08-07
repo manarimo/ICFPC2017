@@ -208,7 +208,6 @@ class GamePlay < Struct.new(:moves, :state)
   def self.from_json(json)
     state = State.from_json(json['state'])
     moves = json['move']['moves'].map{|m| Move.from_json(m, state.map)}
-    STDERR.puts json
     moves.select{|m| m.action == :claim || m.action == :option}.each do |move|
       state.map.set_owner(move.punter, move.edge)
     end
@@ -339,7 +338,6 @@ END
         state: obj.state.to_hash
     }.merge(move.to_hash(obj.state.map))
     print_json(STDOUT, payload)
-    STDERR.puts payload
     STDERR.puts err
   end
 elsif json.key?('stop')
