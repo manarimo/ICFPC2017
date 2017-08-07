@@ -8,6 +8,37 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class MapGen {
+    public static void archipelago() throws IOException {
+        final Map map = new Map();
+        map.sites = new ArrayList<>();
+        map.mines = new ArrayList<>();
+        map.rivers = new ArrayList<>();
+
+        int id = 0;
+        for (int i = 0; i < 2; ++i) {
+            for (int j = 0; j < 2; ++j) {
+                map.mines.add(id);
+                map.rivers.add(new River(id, (id + 1) % 4));
+                map.sites.add(new Site(id++, i * 5, j * 5));
+            }
+        }
+
+        for (int i = 0; i < 6; ++i) {
+            if (i == 0) map.mines.add(id);
+            else map.rivers.add(new River(id - 1, id));
+            map.sites.add(new Site(id++, 10 + i * 5, 0));
+        }
+
+        for (int i = 0; i < 2; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                if (j == 0 || j == 3) map.mines.add(id);
+                if (j != 0) map.rivers.add(new River(id - 1, id));
+                map.sites.add(new Site(id++, 10 * i + 5 * j, 10));
+            }
+        }
+        System.out.println(new ObjectMapper().writeValueAsString(map));
+    }
+
     public static void houki() throws IOException {
         final int eLen = 100;
         final int keNum = 50;
@@ -72,6 +103,6 @@ public class MapGen {
     }
 
     public static void main(String[] args) throws IOException {
-        houki();
+        archipelago();
     }
 }
