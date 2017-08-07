@@ -33,6 +33,7 @@
             </div>
             <form onsubmit={submit}>
                 <input type="text" id="frame" value={this.frame} /> / <span>{this.histories.length}</span>
+                <div>{this.currentMove()}</div>
                 <ul>
                     <li>矢印キーかhjklでフレームを操作できるよぉ</li>
                     <li>テキストボックスに数値を入れてEnterでそこまで飛ぶよぉ</li>
@@ -44,6 +45,23 @@
         this.on('before-mount', () => {
             this.refresh(opts);
         });
+
+        currentMove() {
+            if (this.frame === -1) {
+                return 'Initial state';
+            }
+            const obj = this.histories[this.frame - 1].move;
+            if (obj.option) {
+                return `Player ${obj.option.punter} optionally claims an edge.`;
+            } else if (obj.splurge) {
+                return `Player ${obj.splurge.punter} splurges.`;
+            } else if (obj.claim) {
+                return `Player ${obj.claim.punter} claims an edge.`;
+            } else if (obj.pass) {
+                return `Player ${obj.pass.punter} skips this turn.`;
+            }
+            return `Unknown move`;
+        }
 
         keyPress(e) {
             console.log(e);
@@ -70,7 +88,7 @@
         }
 
         updateSplurges() {
-            this.splurges = this.histories.filter((h, i) => h.move.splurge && i <= this.frame)
+            this.splurges = this.histories.filter((h, i) => h.move.splurge && i < this.frame)
                 .reduce((acc, h) => {
                     let prev = null;
                     h.move.splurge.route.forEach((node, i) => {
@@ -100,9 +118,12 @@
             this.scaleFactor = Math.min(600 / (this.maxX - this.minX), 600 / (this.maxY - this.minY));
             this.scores = {};
             this.histories.forEach((h, i) => {
-                const obj = h.move.claim || h.move.splurge;
+                const obj = h.move.claim || h.move.splurge || h.move.option;
                 if (obj) {
                     this.scores[obj.punter] = h.score;
+                }
+                if (h.move.option) {
+                    h.move.claim = h.move.option;
                 }
             });
             this.updateSplurges();
@@ -131,7 +152,7 @@
             this.scores = {};
             for (let i = 0; i < this.frame; ++i) {
                 const h = this.histories[i];
-                const obj = h.move.claim || h.move.splurge;
+                const obj = h.move.claim || h.move.splurge || h.move.option;
                 if (obj) {
                     this.scores[obj.punter] = h.score;
                 }

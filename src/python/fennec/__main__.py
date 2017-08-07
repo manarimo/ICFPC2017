@@ -93,7 +93,7 @@ def ruleset(ruleset_str):
     if ruleset_str == "lightning_random":
         return random.choice([[], ["x1"]])
     if ruleset_str == "random":
-        full_rules = ["x1"]
+        full_rules = ["x1", "x2", "x3"]
         subsets = sum((list(itertools.combinations(full_rules, r)) for r in range(len(full_rules) + 1)), [])
         return random.choice(subsets)
     return ruleset_str.strip().split(',')
