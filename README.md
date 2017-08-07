@@ -17,14 +17,41 @@ or [communicating with online server](https://github.com/osak/ICFPC2017/blob/rea
 - Yuki Kawata
 
 ## Our strategy
-Main AI is src/ai/kawatea/cherry_pick.cpp. It splits the game into three phases:
+We developed several punters and selected the strongest punter for the submission.
+* kawatea-careful-combined (by Yuki): This punter is good at connecting mines each other. It recognizes the importance of edges
+ (Larger connection cost if the important edge is not available. This is one of generalization of bridge in graph theory).
+ This punter also disturbs others if possible.
 
-1. First phase: picks rivers that are located near from mines. It is not only to maximize the chance to get as many
-   mines as possible, but also to block other players from taking high-efficiency rivers.
-2. Middle phase: extends paths so that mines are connected together, as well as makes those paths longer.
-3. Final phase: once the board becomes filled up and no many choices remained, greedily chooses a river that gains the
-   most score at that point.
-   
+We also developed punters that are not used in final submit. Please let us mention them. They are also our cute children!
+* mu (by yuf): Monte Carlo Tree Search based method. A second is too short to collect enough playouts.
+* poseidon (by mkut): This punter tries to analyze entire board that is not possible in a second for large maps.
+* time-vault (by osak): Simple greedy splurge punter. Attempts to connect two mines whose distance is as far as possible. 
+This is not used just because it is weak.
+* kawatea-random (by Yosuke): This is a dummy opponent for evaluation purpose. We evaluated our punter using the score against this punter.
+* jaguar (by Shunsuke): Machine learning based evaluation function. Feature extraction is too slow to finish within a second.
+* artemis (by mkut): This expected score based punter is as strong as kawatea-careful-combined. 
+Our first submission plan was to combine this and kawatea-careful-combined, but we decided not to use this.
+We found a critical bug 30 minutes before the end of the contest :(
+
+## Friends and other tools
+* Alpaca (by Osamu): Match visualizer
+* Araisan (Raccoon, by Shunsuke): slack wrapper
+* Beaver (by Shunsuke): Match log postprocessor
+* Fennec (by Shunsuke): Random match scheduler
+* Kaban (by Osamu): Database Persister
+* Konohazuku (scops owl, by Shunsuke): Punter rating calculator
+* Serval Cat (by Yosuke): Home-made Online wrapper
+* Tsuchinoko (an imaginary in Japan, by Yosuke): Punter evaluator using Random punter
+* Washimimizuku (eagle owl, by Shunsuke): Evaluation function trainer for jaguar
+
+
+* Zeus (by mkut): Offline match server.
+
+
+* Kadingel: Jenkins server
+* Japari Library: MySQL server
+
+
 ## Remarks
 "Isn't it Ticket to Ride, huh?" -- mkut
 
