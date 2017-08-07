@@ -71,7 +71,6 @@ struct State {
     vector<vector<int> > dist;
     int numOption;
     int rTurn;
-    vector<int> enemyNumOption;
     vector<int> enemyRTurn;
 };
 
@@ -87,9 +86,7 @@ istream &operator>>(istream &is, State &s) {
     }
     is >> s.numOption >> s.rTurn;
     int punter; is >> punter;
-    s.enemyNumOption.resize(punter);
     s.enemyRTurn.resize(punter);
-    for (int i = 0; i < punter; i++) is >> s.enemyNumOption[i];
     for (int i = 0; i < punter; i++) is >> s.enemyRTurn[i];
     return is;
 }
@@ -103,10 +100,7 @@ ostream &operator<<(ostream &os, const State &s) {
         }
     }
     os << ' ' << s.numOption << ' ' << s.rTurn;
-    os << ' ' << s.enemyNumOption.size();
-    for (int i = 0; i < s.enemyNumOption.size(); i++) {
-        os << ' ' << s.enemyNumOption[i];
-    }
+    os << ' ' << s.enemyRTurn.size();
     for (int i = 0; i < s.enemyRTurn.size(); i++) {
         os << ' ' << s.enemyRTurn[i];
     }
@@ -205,7 +199,7 @@ State init(Game &game) {
     for (int i = 0; i < game.punter; i++) {
         enemyRTurn[i] = game.m / game.punter + (i < game.m % game.punter ? 1 : 0);
     }
-    return State{dist, game.mines, expectedTurns, enemyNumOption, enemyRTurn};
+    return State{dist, game.mines, expectedTurns, enemyRTurn};
 }
 
 struct UnionFind {
@@ -385,6 +379,13 @@ vector<double> edgeScore(Game &game, Settings& settings, vector<vector<int> >& s
 Result move(Game &game, Settings& settings, State &state) {
     vector<double> score = edgeScore(game, settings, state.dist, state.numOption, state.rTurn, false, game.punter_id);
 
+    vector<int> enemyNumOption(game.punter, game.mines);
+    for (int i = 0; i < game.m; i++) {
+        if (game.edge[i].option != -1) {
+            enemyNumOption[game.edge[i].option]--;
+        }
+    }
+
     if (debug) ofs << "SCORE (me)" << endl;
     for (int i = 0; i < game.m; i++) {
         if (canClaim(game.edge[i], settings, state.numOption, game.punter_id)) {
@@ -394,11 +395,11 @@ Result move(Game &game, Settings& settings, State &state) {
 
     for (int i = 0; i < game.punter; i++) {
         if (i == game.punter_id) continue;
-        vector<double> enemyScore = edgeScore(game, settings, state.dist, state.enemyNumOption[i], state.enemyRTurn[i], true, i);
+        vector<double> enemyScore = edgeScore(game, settings, state.dist, enemyNumOption[i], state.enemyRTurn[i], true, i);
 
         if (debug) ofs << "SCORE (" << i << ")" << endl;
         for (int j = 0; j < game.m; j++) {
-            if (canClaim(game.edge[i], settings, state.enemyNumOption[i], i)) {
+            if (canClaim(game.edge[i], settings, enemyNumOption[i], i)) {
                 if (debug) ofs << j << ":" << enemyScore[j] << endl;
             }
         }
@@ -406,9 +407,9 @@ Result move(Game &game, Settings& settings, State &state) {
         for (int j = 0; j < game.m; j++) {
             double probEffect;
             if (game.edge[j].owner == -1) {
-                probEffect = openProb(game, settings, state.enemyNumOption[i], state.enemyRTurn[i]) - occupiedProb(game, settings, state.enemyNumOption[i], state.enemyRTurn[i]);
+                probEffect = openProb(game, settings, enemyNumOption[i], state.enemyRTurn[i]) - occupiedProb(game, settings, enemyNumOption[i], state.enemyRTurn[i]);
             } else {
-                probEffect = occupiedProb(game, settings, state.enemyNumOption[i], state.enemyRTurn[i]);
+                probEffect = occupiedProb(game, settings, enemyNumOption[i], state.enemyRTurn[i]);
             }
             score[j] += enemyScore[j] * probEffect / max(1, game.punter - 1);
         }
@@ -442,10 +443,6 @@ Result move(Game &game, Settings& settings, State &state) {
     }
 
     state.rTurn = max(1, state.rTurn - 1);
-
-    for (int i = 0; i < game.punter; i++) {
-        // TODO enemyNumOption の更新には moves が必要
-    }
 
     for (int i = 0; i < game.punter; i++) {
         state.enemyRTurn[i] = max(1, state.enemyRTurn[i] - 1);
