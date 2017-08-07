@@ -7,8 +7,8 @@ from collections import deque
 import random
 
 
-PATH_LENGTH = 4
-TO_SAMPLE = 100000
+PATH_LENGTH = 3
+TO_SAMPLE = 10000
 
 
 def get_punters_data(log):
@@ -161,7 +161,7 @@ def main():
     for row in fetch_all_logs():
         log = json.loads(row["log"])
         states += process_log(log)
-        if len(states) > 10000:
+        if len(states) > 3000:
             break
     df = pd.DataFrame(states)
     artifact_dir = Path(ROOT_DIR / "mimi_artifacts")
