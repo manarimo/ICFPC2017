@@ -71,6 +71,8 @@ struct State {
     vector<vector<int> > dist;
     int numOption;
     int rTurn;
+    vector<int> enemyNumOption;
+    vector<int> enemyRTurn;
 };
 
 istream &operator>>(istream &is, State &s) {
@@ -84,6 +86,11 @@ istream &operator>>(istream &is, State &s) {
         }
     }
     is >> s.numOption >> s.rTurn;
+    int punter; is >> punter;
+    s.enemyNumOption.resize(punter);
+    s.enemyRTurn.resize(punter);
+    for (int i = 0; i < punter; i++) is >> s.enemyNumOption[i];
+    for (int i = 0; i < punter; i++) is >> s.enemyRTurn[i];
     return is;
 }
 
@@ -96,6 +103,13 @@ ostream &operator<<(ostream &os, const State &s) {
         }
     }
     os << ' ' << s.numOption << ' ' << s.rTurn;
+    os << ' ' << s.enemyNumOption.size();
+    for (int i = 0; i < s.enemyNumOption.size(); i++) {
+        os << ' ' << s.enemyNumOption[i];
+    }
+    for (int i = 0; i < s.enemyRTurn.size(); i++) {
+        os << ' ' << s.enemyRTurn[i];
+    }
     return os;
 }
 
@@ -135,16 +149,24 @@ bool canClaim(Edge& e, Settings& settings, State& state, int punterId) {
     return true;
 }
 
-double openProb(Game& game, State& state) {
-    return (1 - (1 - 1. / game.punter) * (1 - 1. / max(1, (game.punter - 1)) * (1. * state.numOption / state.rTurn)));
+double openProb(Game& game, Settings& settings, int numOption, int rTurn) {
+    if (settings.options) {
+        return (1 - (1 - 1. / game.punter) * (1 - 1. / max(1, (game.punter - 1)) * min(1., 1. * numOption / rTurn)));
+    } else {
+        return 1. / game.punter;
+    }
 }
 
-double occupiedProb(Game& game, State& state) {
-    return 1. / max(1, (game.punter - 1)) * (1. * state.numOption / state.rTurn);
+double occupiedProb(Game& game, Settings& settings, int numOption, int rTurn) {
+    if (settings.options) {
+        return 1. / max(1, (game.punter - 1)) * min(1., 1. * numOption / rTurn);
+    } else {
+        return 0;
+    }
 }
 
-double edgeProb(Game& game, State& state, bool open) {
-    return open ? openProb(game, state) : occupiedProb(game, state);
+double edgeProb(Game& game, Settings& settings, int numOption, int rTurn, bool open) {
+    return open ? openProb(game, settings, numOption, rTurn) : occupiedProb(game, settings, numOption, rTurn);
 }
 
 State init(Game &game) {
@@ -178,7 +200,12 @@ State init(Game &game) {
         }
     }
     int expectedTurns = game.m / game.punter + (game.punter_id < game.m % game.punter ? 1 : 0);
-    return State{dist, game.mines, expectedTurns};
+    vector<int> enemyNumOption(game.punter, game.mines);
+    vector<int> enemyRTurn(game.punter);
+    for (int i = 0; i < game.punter; i++) {
+        enemyRTurn[i] = game.m / game.punter + (i < game.m % game.punter ? 1 : 0);
+    }
+    return State{dist, game.mines, expectedTurns, enemyNumOption, enemyRTurn};
 }
 
 struct UnionFind {
@@ -198,7 +225,7 @@ struct UnionFind {
     }
 };
 
-double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPathScore, map<pair<int, int>, double>& pathNum, map<int, int>& dist, vector<double>& dist2, vector<vector<int> >& es, Game& game, State& state, UnionFind& uf, pair<int, int> xdame) {
+double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPathScore, map<pair<int, int>, double>& pathNum, map<int, int>& dist, vector<double>& dist2, vector<vector<int> >& es, Game& game, Settings& settings, State& state, UnionFind& uf, pair<int, int> xdame) {
     int x = xdame.first;
     int dame = xdame.second;
     if (minPathScore.find(xdame) != minPathScore.end()) {
@@ -207,23 +234,25 @@ double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPa
     if (debug) ofs << "IN" << x << "(" << dame << ")" << endl;
     double ret = 0;
     ret += dist2[x];
-    for (int i = 0; i < es[x].size(); i++) {
-        Edge& e = game.edge[es[x][i]];
-        int to = uf.find(e.from) == x ? e.to : e.from;
-        to = uf.find(to);
-        if (debug) ofs << dist[x] << "," << dist[to] << endl;
-        pair<int, int> next;
-        if (dist[x] < dist[to]) {
-            next = make_pair(to, dame);
-        } else if (dist[x] == dist[to] && dame == 0) {
-            next = make_pair(to, 1);
-        } else {
-            continue;
+    if (dist[x] + dame < state.rTurn) {
+        for (int i = 0; i < es[x].size(); i++) {
+            Edge& e = game.edge[es[x][i]];
+            int to = uf.find(e.from) == x ? e.to : e.from;
+            to = uf.find(to);
+            if (debug) ofs << dist[x] << "," << dist[to] << endl;
+            pair<int, int> next;
+            if (dist[x] < dist[to]) {
+                next = make_pair(to, dame);
+            } else if (dist[x] == dist[to] && dame == 0) {
+                next = make_pair(to, 1);
+            } else {
+                continue;
+            }
+            double nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, settings, state, uf, next) * pathNum[xdame] * edgeProb(game, settings, state.numOption, state.rTurn, e.owner == -1) / pathNum[next];
+            ret += nscore * edgeProb(game, settings, state.numOption, state.rTurn, e.owner == -1);
+            score[es[x][i]] += nscore * pathNum[xdame];
+            if (debug) ofs << "edge" << es[x][i] << "/" << score[es[x][i]] << endl;
         }
-        double nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, state, uf, next) * pathNum[xdame] * edgeProb(game, state, e.owner == -1) / pathNum[next];
-        ret += nscore * edgeProb(game, state, e.owner == -1);
-        score[es[x][i]] += nscore * pathNum[xdame];
-        if (debug) ofs << "edge" << es[x][i] << "/" << score[es[x][i]] << endl;
     }
     if (debug) ofs << "OUT" << x << " " << ret << endl;
     return minPathScore[xdame] = ret;
@@ -312,12 +341,12 @@ vector<double> edgeScore(Game &game, Settings& settings, State &state, int punte
                     if (debug) ofs << " " << to << endl;
                     if (dist.find(to) == dist.end() || dist[to] == dist[x] + 1) {
                         pair<int, int> next = make_pair(to, dame);
-                        pathNum[next] += pathNum[*it] * edgeProb(game, state, e.owner == -1);
+                        pathNum[next] += pathNum[*it] * edgeProb(game, settings, state.numOption, state.rTurn, e.owner == -1);
                         nq.insert(next);
                         dist[to] = dist[x] + 1;
                     } else if (dist[to] == dist[x] && dame == 0) {
                         pair<int, int> next = make_pair(to, 1);
-                        pathNum[next] += pathNum[*it] * edgeProb(game, state, e.owner == -1);
+                        pathNum[next] += pathNum[*it] * edgeProb(game, settings, state.numOption, state.rTurn, e.owner == -1);
                         nq.insert(next);
                     }
                 }
@@ -339,7 +368,7 @@ vector<double> edgeScore(Game &game, Settings& settings, State &state, int punte
         }
 
         map<pair<int, int>, double> minPathScore;
-        getMinPathScore(score, minPathScore, pathNum, dist, dist2[i], es, game, state, uf, start);
+        getMinPathScore(score, minPathScore, pathNum, dist, dist2[i], es, game, settings, state, uf, start);
     }
     return score;
 }
@@ -355,7 +384,7 @@ Result move(Game &game, Settings& settings, State &state) {
     }
 
     for (int i = 0; i < game.m; i++) {
-        score[i] = score[i] * (game.punter - 1) / game.punter;
+        score[i] *= (1 - edgeProb(game, settings, state.numOption, state.rTurn, game.edge[i].owner == -1));
     }
     for (int i = 0; i < game.punter; i++) {
         if (i == game.punter_id) continue;
@@ -369,7 +398,13 @@ Result move(Game &game, Settings& settings, State &state) {
         }
 
         for (int j = 0; j < game.m; j++) {
-            score[j] += enemyScore[j] / game.punter / (game.punter - 1);
+            double probEffect;
+            if (game.edge[j].owner == -1) {
+                probEffect = openProb(game, settings, state.enemyNumOption[i], state.enemyRTurn[i]) - occupiedProb(game, settings, state.enemyNumOption[i], state.enemyRTurn[i]);
+            } else {
+                probEffect = occupiedProb(game, settings, state.enemyNumOption[i], state.enemyRTurn[i]);
+            }
+            score[j] += enemyScore[j] * probEffect / max(1, game.punter - 1);
         }
     }
 
@@ -402,7 +437,15 @@ Result move(Game &game, Settings& settings, State &state) {
 
     state.rTurn = max(1, state.rTurn - 1);
 
-    ofs << "numOption=" << state.numOption << endl;
+    for (int i = 0; i < game.punter; i++) {
+        // TODO enemyNumOption の更新には moves が必要
+    }
+
+    for (int i = 0; i < game.punter; i++) {
+        state.enemyRTurn[i] = max(1, state.enemyRTurn[i] - 1);
+    }
+
+    if (debug) ofs << "numOption=" << state.numOption << endl;
 
     return Result {maxIdx, state};
 }
