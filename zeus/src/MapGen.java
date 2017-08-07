@@ -104,9 +104,9 @@ public class MapGen {
 
     public static void rand() throws IOException {
         final int n = 12;
-        final double pRiver = 1;
-        final double pMine = 0.75;
-        int mineLimit = 1000;
+        final double pRiver = 0.7;
+        final double pMine = 0.85;
+        int mineLimit = 300;
         final Random random = new Random(System.currentTimeMillis());
         final Map map = new Map();
         map.sites = new ArrayList<>();
