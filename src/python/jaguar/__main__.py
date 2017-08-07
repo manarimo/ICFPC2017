@@ -21,7 +21,7 @@ class Game(object):
         self.edges = edges
 
     def feature_vector(self):
-        sample = 1000
+        sample = 750
         fv = feature_vector(self.graph, self.mines, self.edge_owner, self.punter_id, 3, sample)
         return [v * 10000 / sample for v in fv]
 
