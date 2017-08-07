@@ -79,8 +79,8 @@ void input() {
     used.resize(n);
     scanf("%d", &m);
     for (int i = 0; i < m; i++) {
-        int from, to, owner;
-        scanf("%d %d %d", &from, &to, &owner);
+      int from, to, owner, owner2;
+      scanf("%d %d %d", &from, &to, &owner, &owner2);
         
         graph[from].push_back(Edge(to, i, owner));
         graph[to].push_back(Edge(from, i, owner));
