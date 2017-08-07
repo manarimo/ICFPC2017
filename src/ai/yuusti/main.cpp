@@ -34,7 +34,8 @@ istream &operator>>(istream &is, Game &g) {
     is >> g.m;
     g.edge.resize(g.m);
     for (int i = 0; i < g.m; ++i) {
-        is >> g.edge[i].from >> g.edge[i].to >> g.edge[i].owner;
+        int gomi;
+        is >> g.edge[i].from >> g.edge[i].to >> g.edge[i].owner >> gomi;
         auto &e = g.edge[i];
     }
     return is;
