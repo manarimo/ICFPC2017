@@ -103,7 +103,7 @@ public class MapGen {
     }
 
     public static void rand() throws IOException {
-        final int n = 20;
+        final int n = 10;
         final double pRiver = 1;
         final double pMine = 100;
         final Random random = new Random();
