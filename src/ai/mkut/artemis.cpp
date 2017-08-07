@@ -373,15 +373,15 @@ Result move(Game &game, Settings& settings, State &state) {
         }
     }
 
-    vector<double> score(game.m);
-    edgeScore(score, game, settings, dist, enemyNumOption[game.punter_id], state.rTurn, false, game.punter_id);
-
     vector<int> enemyNumOption(game.punter, game.mines);
     for (int i = 0; i < game.m; i++) {
         if (game.edge[i].option != -1) {
             enemyNumOption[game.edge[i].option]--;
         }
     }
+
+    vector<double> score(game.m);
+    edgeScore(score, game, settings, dist, enemyNumOption[game.punter_id], state.rTurn, false, game.punter_id);
 
     for (int i = 0; i < game.punter; i++) {
         if (checkTimeOut()) {
