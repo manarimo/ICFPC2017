@@ -6,7 +6,7 @@
 
 using namespace std;
 
-const int MAX_NUM = 200000;
+const int MAX_NUM = 100000;
 const int INF = 1e9;
 const long long INF2 = (long long)INF * INF;
 int punter, punter_id;
