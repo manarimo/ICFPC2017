@@ -7,6 +7,7 @@
 #include <fstream>
 #include <cmath>
 #include <ctime>
+#include <cstdio>
 
 using namespace std;
 
@@ -15,7 +16,8 @@ clock_t start;
 bool checkTimeOut() {
     clock_t t = clock() - start;
     double tsec = ((double)t) / CLOCKS_PER_SEC;
-    if (tsec > 0.9) {
+    //cerr << tsec << endl;
+    if (tsec > 0.6) {
         return true;
     }
     return false;
@@ -81,37 +83,36 @@ struct State {
     vector<int> enemyRTurn;
 };
 
-istream &operator>>(istream &is, State &s) {
-    int n; is >> n;
+void readState(State& s) {
+    int n; scanf("%d", &n);
     s.dist.resize(n);
     for (int i = 0; i < n; ++i) {
-        int m; is >> m;
+        int m; scanf("%d", &m);
         s.dist[i].resize(m);
         for (int j = 0; j < m; ++j) {
-            is >> s.dist[i][j];
+            scanf("%d", &s.dist[i][j]);
         }
     }
-    is >> s.numOption >> s.rTurn;
-    int punter; is >> punter;
+    scanf("%d", &s.numOption);
+    scanf("%d", &s.rTurn);
+    int punter; scanf("%d", &punter);
     s.enemyRTurn.resize(punter);
-    for (int i = 0; i < punter; i++) is >> s.enemyRTurn[i];
-    return is;
+    for (int i = 0; i < punter; i++) scanf("%d", &s.enemyRTurn[i]);
 }
 
-ostream &operator<<(ostream &os, const State &s) {
-    os << s.dist.size();
+void writeState(State& s) {
+    printf("%lu", s.dist.size());
     for (int i = 0; i < s.dist.size(); ++i) {
-        os << ' ' << s.dist[i].size();
+        printf(" %lu", s.dist[i].size());
         for (int j = 0; j < s.dist[i].size(); ++j) {
-            os << ' ' << s.dist[i][j];
+            printf(" %d", s.dist[i][j]);
         }
     }
-    os << ' ' << s.numOption << ' ' << s.rTurn;
-    os << ' ' << s.enemyRTurn.size();
+    printf(" %d %d", s.numOption, s.rTurn);
+    printf(" %lu", s.enemyRTurn.size());
     for (int i = 0; i < s.enemyRTurn.size(); i++) {
-        os << ' ' << s.enemyRTurn[i];
+        printf(" %d", s.enemyRTurn[i]);
     }
-    return os;
 }
 
 struct Result {
@@ -271,12 +272,10 @@ void edgeScore(vector<double>& score, Game &game, Settings& settings, vector<vec
             uf.unite(game.edge[i].to, game.edge[i].from);
         }
     }
-
     map<int, vector<int> > unions;
     for (int i = 0; i < game.n; i++) {
         unions[uf.find(i)].push_back(i);
     }
-
     vector<vector<int> > es(game.n);
     for (int i = 0; i < game.m; i++) {
         Edge &e = game.edge[i];
@@ -290,7 +289,6 @@ void edgeScore(vector<double>& score, Game &game, Settings& settings, vector<vec
             es[to].push_back(i);
         }
     }
-
     vector<vector<double> > dist2(game.mines, vector<double>(game.n));
     for (int i = 0; i < game.mines; i++) {
         for (map<int, vector<int> >::iterator it = unions.begin(); it != unions.end(); ++it) {
@@ -303,7 +301,6 @@ void edgeScore(vector<double>& score, Game &game, Settings& settings, vector<vec
             dist2[i][x] = score;
         }
     }
-
     for (int i = 0; i < game.mines; i++) {
         if (checkTimeOut()) {
             break;
@@ -345,7 +342,6 @@ void edgeScore(vector<double>& score, Game &game, Settings& settings, vector<vec
 }
 
 Result move(Game &game, Settings& settings, State &state) {
-
     vector<double> score(game.m);
     edgeScore(score, game, settings, state.dist, state.numOption, state.rTurn, false, game.punter_id);
 
@@ -419,12 +415,15 @@ int main() {
         case INIT:
             cin >> game >> settings;
             cout << 0 << endl;  // futures
-            cout << init(game) << endl;
+            state = init(game);
+            writeState(state);
             break;
         case MOVE:
-            cin >> game >> settings >> state;
+            cin >> game >> settings;
+            readState(state);
             result = move(game, settings, state);
-            cout << result.edge << '\n' << result.state;
+            cout << result.edge << '\n';
+            writeState(result.state);
             break;
         case END:
             break;
