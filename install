@@ -3,4 +3,4 @@
 # write everything you need to build here.
 
 mkdir -p build
-g++ -O3 -std=c++11 -o build/time_vault src/ai/osak/time_vault.cc
+g++ -O3 -std=c++11 -o build/kawatea_careful src/ai/kawatea/careful.cpp
