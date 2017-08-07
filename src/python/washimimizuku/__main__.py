@@ -157,8 +157,10 @@ def process_log(log, sample_rate=0.01):
 
 
 def main():
-    logs = list(json.loads(row["log"]) for row in fetch_all_logs())
-    states = sum([process_log(log) for log in logs], [])
+    states = []
+    for row in fetch_all_logs():
+        log = json.loads(row["log"])
+        states += process_log(log)
     df = pd.DataFrame(states)
     artifact_dir = Path(ROOT_DIR / "mimi_artifacts")
     if not artifact_dir.exists():
