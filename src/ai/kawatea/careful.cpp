@@ -7,14 +7,16 @@
 using namespace std;
 
 const int INF = 1e9;
+const long long INF2 = (long long)INF * INF;
 int punter, punter_id;
 
 struct Edge {
     int to;
     int id;
     bool used;
+    bool option;
     
-    Edge(int to, int id, bool used) : to(to), id(id), used(used) {}
+    Edge(int to, int id, bool used, bool option) : to(to), id(id), used(used), option(option) {}
 };
 
 class Mine {
@@ -99,6 +101,8 @@ class UnionFind {
 };
 
 int stage = 0;
+int options = 0;
+vector<pair<bool, pair<int, int>>> edges;
 vector<vector<Edge>> graph;
 vector<vector<int>> degree;
 vector<UnionFind> uf;
@@ -126,24 +130,39 @@ void input(bool read_state) {
     graph.resize(n);
     degree = vector<vector<int>>(punter, vector<int>(n));
     for (int i = 0; i < m; i++) {
-        int from, to, owner;
-        scanf("%d %d %d", &from, &to, &owner);
+        int from, to, owner1, owner2;
+        scanf("%d %d %d %d", &from, &to, &owner1, &owner2);
+        if (owner1 != -1 && owner1 != punter_id && owner2 == -1) {
+            edges.push_back(make_pair(true, make_pair(from, to)));
+        } else {
+            edges.push_back(make_pair(false, make_pair(from, to)));
+        }
         
-        if (owner == -1) {
-            graph[from].push_back(Edge(to, i, false));
-            graph[to].push_back(Edge(from, i, false));
+        if (owner1 == -1) {
+            graph[from].push_back(Edge(to, i, false, false));
+            graph[to].push_back(Edge(from, i, false, false));
             for (int j = 0; j < punter; j++) {
                 if (j == punter_id) continue;
                 uf[j].unite(from, to);
             }
-        } else if (owner == punter_id) {
-            graph[from].push_back(Edge(to, i, true));
-            graph[to].push_back(Edge(from, i, true));
+        } else if (owner1 == punter_id || owner2 == punter_id) {
+            graph[from].push_back(Edge(to, i, true, false));
+            graph[to].push_back(Edge(from, i, true, false));
             uf[punter_id].unite(from, to);
-        } else {
-            degree[owner][from]++;
-            degree[owner][to]++;
-            uf[owner].unite(from, to);
+        } else if (owner2 == -1) {
+            graph[from].push_back(Edge(to, i, false, true));
+            graph[to].push_back(Edge(from, i, false, true));
+        }
+        
+        if (owner1 != punter_id && owner1 != -1) {
+            degree[owner1][from]++;
+            degree[owner1][to]++;
+            uf[owner1].unite(from, to);
+        }
+        if (owner2 != punter_id && owner2 != -1) {
+            degree[owner2][from]++;
+            degree[owner2][to]++;
+            uf[owner2].unite(from, to);
         }
     }
     
@@ -151,11 +170,13 @@ void input(bool read_state) {
     for (int i = 0; i < setting; i++) {
         char option[10];
         scanf("%s", option);
+        if (option[0] == 'o') options = mine;
     }
     
     all_dist = vector<vector<int>>(mine, vector<int>(n));
     if (read_state) {
         scanf("%d", &stage);
+        scanf("%d", &options);
         for (int i = 0; i < mine; i++) {
             for (int j = 0; j < n; j++) {
                 int d;
@@ -168,6 +189,7 @@ void input(bool read_state) {
 
 void output_state() {
     printf("%d\n", stage);
+    printf("%d\n", options);
     for (int i = 0; i < mines.get_count(); i++) {
         for (int j = 0; j < graph.size(); j++) {
             printf("%d ", all_dist[i][j]);
@@ -184,13 +206,14 @@ void output(const vector<pair<int, int>>& futures) {
     output_state();
 }
 
-void output(int id) {
+void output(int id, bool option = false) {
+    if (option) options--;
     printf("%d\n", id);
     output_state();
 }
 
 void handshake() {
-    puts("kawatea-careful");
+    puts("kawatea-careful-forecast");
 }
 
 void init() {
@@ -221,118 +244,224 @@ void init() {
     output(vector<pair<int, int>>());
 }
 
-int calc_dist(int v1, int v2, int from, int to) {
-    vector<bool> visited(graph.size());
-    vector<int> dist(graph.size());
-    deque<int> q;
+vector<int> calc_dist(int v1, int v2, int from, int to) {
+    vector<vector<bool>> visited(graph.size(), vector<bool>(options + 1));
+    vector<vector<int>> dist(graph.size(), vector<int>(options + 1));
+    deque<pair<int, int>> q;
     
-    for (int i = 0; i < graph.size(); i++) dist[i] = INF;
-    dist[v1] = 0;
-    q.push_back(v1);
+    for (int i = 0; i < graph.size(); i++) {
+        for (int j = 0; j <= options; j++) {
+            dist[i][j] = INF;
+        }
+    }
+    dist[v1][0] = 0;
+    q.push_back(make_pair(v1, 0));
     
     while (!q.empty()) {
-        int last = q.front();
+        int last = q.front().first, count = q.front().second;
         q.pop_front();
         
-        if (last == v2) return dist[last];
-        if (visited[last]) continue;
-        visited[last] = true;
+        if (visited[last][count]) continue;
+        visited[last][count] = true;
         
         for (const Edge& edge : graph[last]) {
             int next = edge.to;
             if ((last == from && next == to) || (last == to && next == from)) continue;
-            if (visited[next]) continue;
+            if (uf[punter_id].same(next, v2)) next = v2;
             if (edge.used) {
-                if (dist[next] > dist[last]) {
-                    dist[next] = dist[last];
-                    q.push_front(next);
+                if (dist[next][count] > dist[last][count]) {
+                    dist[next][count] = dist[last][count];
+                    q.push_front(make_pair(next, count));
+                }
+            } else if (edge.option) {
+                if (count < options) {
+                    if (dist[next][count + 1] > dist[last][count] + 1) {
+                        dist[next][count + 1] = dist[last][count] + 1;
+                        q.push_back(make_pair(next, count + 1));
+                    }
                 }
             } else {
-                if (dist[next] > dist[last] + 1) {
-                    dist[next] = dist[last] + 1;
-                    q.push_back(next);
+                if (dist[next][count] > dist[last][count] + 1) {
+                    dist[next][count] = dist[last][count] + 1;
+                    q.push_back(make_pair(next, count));
                 }
             }
         }
     }
     
-    return INF;
+    return dist[v2];
 }
 
 void connect(int v1, int v2) {
-    int base, best = 0, best_near = 0, id = -1;
-    vector<bool> visited(graph.size());
-    vector<int> dist(graph.size());
-    deque<int> q;
+    bool option = false;
+    int base = INF, best = -1, id = -1;
+    long long sum = 0, best_status = 0;
+    vector<vector<bool>> visited(graph.size(), vector<bool>(options + 1));
+    vector<vector<int>> dist1(graph.size(), vector<int>(options + 1));
+    vector<vector<int>> dist2(graph.size(), vector<int>(options + 1));
+    vector<vector<long long>> sum1(graph.size(), vector<long long>(options + 1));
+    vector<vector<long long>> sum2(graph.size(), vector<long long>(options + 1));
+    vector<long long> root(edges.size());
+    deque<pair<int, int>> q;
     
-    for (int i = 0; i < graph.size(); i++) dist[i] = INF;
-    dist[v1] = 0;
-    q.push_back(v1);
-    
-    while (!q.empty()) {
-        int last = q.front();
-        q.pop_front();
-        
-        if (visited[last]) continue;
-        visited[last] = true;
-        
-        for (const Edge& edge : graph[last]) {
-            int next = edge.to;
-            if (visited[next]) continue;
-            if (edge.used) {
-                if (dist[next] > dist[last]) {
-                    dist[next] = dist[last];
-                    q.push_front(next);
-                }
-            } else {
-                if (dist[next] > dist[last] + 1) {
-                    dist[next] = dist[last] + 1;
-                    q.push_back(next);
-                }
-            }
+    for (int i = 0; i < graph.size(); i++) {
+        for (int j = 0; j <= options; j++) {
+            dist1[i][j] = INF;
         }
     }
-    
-    base = dist[v2];
-    for (int i = 0; i < graph.size(); i++) visited[i] = false;
-    q.push_back(v2);
+    dist1[v1][0] = 0;
+    sum1[v1][0] = 1;
+    q.push_back(make_pair(v1, 0));
     
     while (!q.empty()) {
-        int last = q.front();
+        int last = q.front().first, count = q.front().second;
         q.pop_front();
         
-        visited[last] = true;
+        if (visited[last][count]) continue;
+        visited[last][count] = true;
         
         for (const Edge& edge : graph[last]) {
             int next = edge.to;
-            if (visited[next]) continue;
+            if (uf[punter_id].same(next, v2)) next = v2;
             if (edge.used) {
-                q.push_front(next);
-            } else {
-                if (dist[next] == dist[last] - 1) {
-                    int d = calc_dist(v1, v2, last, next);
-                    if (d > best || (d == best && min(dist[next], base - dist[last]) < best_near)) {
-                        best = d;
-                        best_near = min(dist[next], base - dist[last]);
-                        id = edge.id;
+                if (dist1[next][count] > dist1[last][count]) {
+                    dist1[next][count] = dist1[last][count];
+                    sum1[next][count] = sum1[last][count];
+                    q.push_front(make_pair(next, count));
+                } else if (dist1[next][count] == dist1[last][count]) {
+                    if (!visited[next][count]) sum1[next][count] = min(sum1[next][count] + sum1[last][count], INF2);
+                }
+            } else if (edge.option) {
+                if (count < options) {
+                    if (dist1[next][count + 1] > dist1[last][count] + 1) {
+                        dist1[next][count + 1] = dist1[last][count] + 1;
+                        sum1[next][count + 1] = sum1[last][count];
+                        q.push_back(make_pair(next, count + 1));
+                    } else if (dist1[next][count + 1] == dist1[last][count] + 1) {
+                        sum1[next][count + 1] = min(sum1[next][count + 1] + sum1[last][count], INF2);
                     }
-                    if (dist[next] > 0) q.push_back(next);
+                }
+            } else {
+                if (dist1[next][count] > dist1[last][count] + 1) {
+                    dist1[next][count] = dist1[last][count] + 1;
+                    sum1[next][count] = sum1[last][count];
+                    q.push_back(make_pair(next, count));
+                } else if (dist1[next][count] == dist1[last][count] + 1) {
+                    sum1[next][count] = min(sum1[next][count] + sum1[last][count], INF2);
                 }
             }
         }
     }
     
-    output(id);
+    for (int i = 0; i <= options; i++) {
+        for (int j = 0; j < i; j++) {
+            if (dist1[v2][i] > dist1[v2][j] + j - i) dist1[v2][i] = INF;
+        }
+        base = min(base, dist1[v2][i] + i);
+        if (dist1[v2][i] < INF) sum = min(sum + sum1[v2][i], INF2);
+    }
+    
+    for (int i = 0; i < graph.size(); i++) {
+        for (int j = 0; j <= options; j++) {
+            visited[i][j] = false;
+            dist2[i][j] = INF;
+        }
+    }
+    dist2[v2][0] = 0;
+    sum2[v2][0] = 1;
+    q.push_back(make_pair(v2, 0));
+    
+    while (!q.empty()) {
+        int last = q.front().first, count = q.front().second;
+        q.pop_front();
+        
+        if (visited[last][count]) continue;
+        visited[last][count] = true;
+        
+        for (const Edge& edge : graph[last]) {
+            int next = edge.to;
+            if (uf[punter_id].same(next, v2)) next = v2;
+            if (edge.used) {
+                if (dist2[next][count] > dist2[last][count]) {
+                    dist2[next][count] = dist2[last][count];
+                    sum2[next][count] = sum2[last][count];
+                    q.push_front(make_pair(next, count));
+                } else if (dist2[next][count] == dist2[last][count]) {
+                    if (!visited[next][count]) sum2[next][count] = min(sum2[next][count] + sum2[last][count], INF2);
+                }
+            } else if (edge.option) {
+                for (int i = 0; i + count + 1 <= options; i++) {
+                    if (dist1[next][i] + dist2[last][count] + 1 == dist1[v2][i + count + 1]) {
+                        if (INF2 / sum1[next][i] >= sum2[last][count]) {
+                            root[edge.id] = min(root[edge.id] + sum1[next][i] * sum2[last][count], INF2);
+                        } else {
+                            root[edge.id] = INF2;
+                        }
+                    }
+                }
+                if (count < options) {
+                    if (dist2[next][count + 1] > dist2[last][count] + 1) {
+                        dist2[next][count + 1] = dist2[last][count] + 1;
+                        sum2[next][count + 1] = sum2[last][count];
+                        q.push_back(make_pair(next, count + 1));
+                    } else if (dist2[next][count + 1] == dist2[last][count] + 1) {
+                        sum2[next][count + 1] = min(sum2[next][count + 1] + sum2[last][count], INF2);
+                    }
+                }
+            } else {
+                for (int i = 0; i + count <= options; i++) {
+                    if (dist1[next][i] + dist2[last][count] + 1 == dist1[v2][i + count]) {
+                        if (INF2 / sum1[next][i] >= sum2[last][count]) {
+                            root[edge.id] = min(root[edge.id] + sum1[next][i] * sum2[last][count], INF2);
+                        } else {
+                            root[edge.id] = INF2;
+                        }
+                    }
+                }
+                if (dist2[next][count] > dist2[last][count] + 1) {
+                    dist2[next][count] = dist2[last][count] + 1;
+                    sum2[next][count] = sum2[last][count];
+                    q.push_back(make_pair(next, count));
+                } else if (dist2[next][count] == dist2[last][count] + 1) {
+                    sum2[next][count] = min(sum2[next][count] + sum2[last][count], INF2);
+                }
+            }
+        }
+    }
+    
+    for (int i = 0; i < edges.size(); i++) {
+        int d = INF, from = edges[i].second.first, to = edges[i].second.second;
+        long long status = root[i];
+        if (root[i] == 0) continue;
+        
+        if (root[i] == sum) {
+            vector<int> dists = calc_dist(v1, v2, from, to);
+            for (int i = 0; i <= options; i++) d = min(d, dists[i] + i - base);
+        } else {
+            d = 0;
+        }
+        
+        if (uf[punter_id].same(from, v1) || uf[punter_id].same(from, v2) || uf[punter_id].same(to, v1) || uf[punter_id].same(to, v2)) status++;
+        if (!edges[i].first) status *= 2;
+        
+        if (d > best || (d == best && status > best_status)) {
+            best = d;
+            best_status = status;
+            id = i;
+            option = edges[i].first;
+        }
+    }
+    
+    output(id, option);
 }
 
 void connect() {
     int component = 0, v1 = -1, v2 = -1;
     double best = 0;
     vector<bool> used(mines.get_count());
-    vector<bool> visited(graph.size());
-    vector<bool> checked(graph.size());
-    vector<int> dist(graph.size());
-    deque<int> q;
+    vector<vector<bool>> visited(graph.size(), vector<bool>(options + 1));
+    vector<vector<int>> dist(graph.size(), vector<int>(options + 1));
+    deque<pair<int, int>> q;
     
     for (int mine : mines.get_mines()) {
         component = max(component, (int)uf[punter_id].get_mines(mine).size());
@@ -342,42 +471,47 @@ void connect() {
         if (used[mines.get_num(mine)]) continue;
         if (component > mines.get_count() / 2 && uf[punter_id].get_mines(mine).size() != component) continue;
         
-        for (int i = 0; i < graph.size(); i++) visited[i] = false;
-        for (int i = 0; i < graph.size(); i++) checked[i] = false;
-        for (int i = 0; i < graph.size(); i++) dist[i] = INF;
-        checked[uf[punter_id].find(mine)] = true;
-        dist[mine] = 0;
-        q.push_back(mine);
+        for (int i = 0; i < graph.size(); i++) {
+            for (int j = 0; j <= options; j++) {
+                visited[i][j] = false;
+                dist[i][j] = INF;
+            }
+        }
+        dist[mine][0] = 0;
+        q.push_back(make_pair(mine, 0));
         
         while (!q.empty()) {
-            int last = q.front();
+            int last = q.front().first, count = q.front().second;
             q.pop_front();
             
-            if (visited[last]) continue;
-            visited[last] = true;
-            if (dist[last] == 0 && mines.is_mine(last)) used[mines.get_num(mine)] = true;
-            if (uf[punter_id].get_mines(last).size() > 0 && !checked[uf[punter_id].find(last)]) {
-                double score = (double)uf[punter_id].get_size(last) * uf[punter_id].get_size(mine) / dist[last];
+            if (visited[last][count]) continue;
+            visited[last][count] = true;
+            if (dist[last][count] == 0 && mines.is_mine(last)) used[mines.get_num(mine)] = true;
+            if (!uf[punter_id].same(last, mine) && uf[punter_id].get_mines(last).size() > 0) {
+                double score = (double)uf[punter_id].get_size(last) * uf[punter_id].get_size(mine) / (dist[last][count] + count);
                 if (score > best) {
                     best = score;
                     v1 = mine;
                     v2 = last;
                 }
-                checked[uf[punter_id].find(last)] = true;
             }
             
             for (const Edge& edge : graph[last]) {
                 int next = edge.to;
-                if (visited[next]) continue;
                 if (edge.used) {
-                    if (dist[next] > dist[last]) {
-                        dist[next] = dist[last];
-                        q.push_front(next);
+                    if (dist[next][count] > dist[last][count]) {
+                        dist[next][count] = dist[last][count];
+                        q.push_front(make_pair(next, count));
+                    }
+                } else if (edge.option) {
+                    if (count < options && dist[next][count + 1] > dist[last][count] + 1) {
+                        dist[next][count + 1] = dist[last][count] + 1;
+                        q.push_back(make_pair(next, count + 1));
                     }
                 } else {
-                    if (dist[next] > dist[last] + 1) {
-                        dist[next] = dist[last] + 1;
-                        q.push_back(next);
+                    if (dist[next][count] > dist[last][count] + 1) {
+                        dist[next][count] = dist[last][count] + 1;
+                        q.push_back(make_pair(next, count));
                     }
                 }
             }
@@ -398,7 +532,7 @@ void surround() {
     for (int mine : mines.get_mines()) {
         int rest = 0;
         for (const Edge& edge : graph[mine]) {
-            if (!edge.used) rest++;
+            if (!edge.used && !edge.option) rest++;
         }
         if (rest > 0) order.push_back(make_pair(rest, mine));
     }
@@ -408,7 +542,7 @@ void surround() {
         int mine = order[i].second;
         for (const Edge& edge : graph[mine]) {
             int count = 0;
-            if (edge.used) continue;
+            if (edge.used || edge.option) continue;
             for (int j = 0; j < punter; j++) {
                 if (j == punter_id) continue;
                 if (uf[j].get_mines(mine).size() == 1) continue;
@@ -431,22 +565,32 @@ void surround() {
 
 void extend() {
     int id = -1;
+    bool option = false;
     long long best = 0;
-    vector<long long> profit(graph.size());
+    vector<bool> visited(graph.size());
+    vector<int> dist(graph.size());
     vector<int> parent(graph.size());
-    queue<int> q;
+    vector<int> order;
+    vector<long long> profit(graph.size());
+    deque<int> q;
     
+    for (int i = 0; i < graph.size(); i++) dist[i] = INF;
     for (int i = 0; i < graph.size(); i++) parent[i] = -1;
     for (int mine : mines.get_mines()) {
+        dist[mine] = 0;
         parent[mine] = mine;
-        q.push(mine);
+        q.push_back(mine);
     }
     
     while (!q.empty()) {
         int last = q.front();
-        q.pop();
+        q.pop_front();
         
-        if (!uf[punter_id].used(last)) {
+        if (visited[last]) continue;
+        visited[last] = true;
+        
+        if (dist[last] > 0) {
+            order.push_back(last);
             for (int mine : uf[punter_id].get_mines(parent[last])) {
                 profit[last] += (long long)all_dist[mine][last] * all_dist[mine][last];
             }
@@ -454,33 +598,51 @@ void extend() {
         
         for (const Edge& edge : graph[last]) {
             int next = edge.to;
-            if (parent[next] == -1) {
-                parent[next] = parent[last];
-                q.push(next);
+            if (visited[next]) continue;
+            if (edge.used) {
+                if (dist[next] > dist[last]) {
+                    dist[next] = dist[last];
+                    parent[next] = parent[last];
+                    q.push_front(next);
+                }
+            } else if (!edge.option || options > 0) {
+                if (dist[next] > dist[last] + 1) {
+                    dist[next] = dist[last] + 1;
+                    parent[next] = parent[last];
+                    q.push_back(next);
+                }
+            }
+        }
+    }
+    
+    reverse(order.begin(), order.end());
+    for (int last : order) {
+        for (const Edge& edge : graph[last]) {
+            int next = edge.to;
+            if (edge.used || (!edge.option && dist[next] == dist[last] + 1)) {
+                profit[last] += profit[next] / 2;
+            } else if (options > 0 && dist[next] == dist[last] + 1) {
+                profit[last] += profit[next] / 4;
             }
         }
     }
     
     for (int i = 0; i < graph.size(); i++) {
-        for (const Edge& edge : graph[i]) {
-            int from = i, to = edge.to;
-            if (edge.used || uf[punter_id].same(from, to)) continue;
-            if (!uf[punter_id].used(from)) swap(from, to);
-            if (uf[punter_id].used(from)) {
-                long long score = profit[to];
-                for (const Edge& edge : graph[to]) {
-                    score += profit[edge.to] / punter;
-                }
-                if (score > best) {
-                    best = score;
-                    id = edge.id;
-                }
+        int last = i;
+        if (dist[last] > 0) continue;
+        for (const Edge& edge : graph[last]) {
+            int next = edge.to;
+            if (edge.used || (edge.option && options == 0) || uf[punter_id].same(last, next)) continue;
+            if (profit[next] > best) {
+                best = profit[next];
+                id = edge.id;
+                option = edge.option;
             }
         }
     }
     
     if (best > 0) {
-        output(id);
+        output(id, option);
     } else {
         stage++;
     }
@@ -489,9 +651,15 @@ void extend() {
 void prevent() {
     int best = INF, id = -1;
     
+    for (int mine : mines.get_mines()) {
+        for (const Edge& edge : graph[mine]) {
+            if (!edge.used && !edge.option) output(edge.id);
+        }
+    }
+    
     for (int i = 0; i < graph.size(); i++) {
         for (const Edge& edge : graph[i]) {
-            if (!edge.used) {
+            if (!edge.used && !edge.option) {
                 int degree = (graph[i].size() + 1) * (graph[edge.to].size() + 1);
                 if (degree < best) {
                     best = degree;
