@@ -118,6 +118,7 @@ vector<int> tap(int start) {
     int maxMine = -1;
     for (int mine = 0; mine < V; ++mine) {
         if (start == mine) continue;
+        if (root(start) == root(mine)) continue;
         if (!owned[mine]) continue;
         if (dist[mine] != -1 && (maxMine == -1 || dist[mine] > dist[maxMine])) {
             maxMine = mine;
@@ -166,6 +167,7 @@ int greedy() {
     for (const auto &row : graph) {
         for (const River &r : row) {
             if (r.owner1 != -1) continue; // TODO options
+            if (root(r.from) == root(r.to)) continue;
             if (owned[r.from] && !owned[r.to] && score[r.to] > ansScore) {
                 ans = r.id;
                 ansScore = score[r.to];
