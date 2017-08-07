@@ -23,8 +23,8 @@ int root(int i) {
 }
 
 bool unite(int i, int j) {
-    const ri = root(i);
-    const rj = root(j);
+    const int ri = root(i);
+    const int rj = root(j);
     if (ri == rj) {
         return false;
     }
