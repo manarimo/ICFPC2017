@@ -13,8 +13,24 @@ int myId;
 set<int> mines;
 vector<vector<River>> graph;
 vector<bool> owned;
+vector<int> group;
 bool useFuture, useSplurge;
 int timeCounter;
+
+int root(int i) {
+    if (group[i] == i) return i;
+    return group[i] = root(group[i]);
+}
+
+bool unite(int i, int j) {
+    const ri = root(i);
+    const rj = root(j);
+    if (ri == rj) {
+        return false;
+    }
+    group[ri] = rj;
+    return true;
+}
 
 void readMap() {
     cin >> P >> myId >> V;
@@ -26,6 +42,10 @@ void readMap() {
     }
 
     graph.resize(V);
+    group.resize(V);
+    for (int i = 0; i < V; ++i) {
+        group[i] = i;
+    }
     cin >> E;
     for (int i = 0; i < E; ++i) {
         River r;
@@ -33,6 +53,9 @@ void readMap() {
         cin >> r.from >> r.to >> r.owner1 >> r.owner2;
         graph[r.from].push_back(r);
         graph[r.to].push_back(River{r.id, r.to, r.from, r.owner1, r.owner2});
+        if (r.owner1 == myId || r.owner2 == myId) {
+            unite(r.from, r.to);
+        }
     }
 }
 
