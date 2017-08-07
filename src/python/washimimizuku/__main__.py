@@ -136,7 +136,7 @@ def feature_vector(graph, mines, edge_owner, punter_id, punter_num):
     return [current_score] + path_feature + quad_vector(path_feature)
 
 
-def process_log(log, sample_rate=0.01):
+def process_log(log, sample_rate=0.1):
     punters = get_punters_data(log)
     graph, mines, edge_owner = get_map(log)
     if "history" not in log:
@@ -161,6 +161,8 @@ def main():
     for row in fetch_all_logs():
         log = json.loads(row["log"])
         states += process_log(log)
+        if len(states) > 10000:
+            break
     df = pd.DataFrame(states)
     artifact_dir = Path(ROOT_DIR / "mimi_artifacts")
     if not artifact_dir.exists():
