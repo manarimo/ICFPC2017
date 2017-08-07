@@ -5,6 +5,7 @@ from pathlib import Path
 import json
 from collections import deque
 import random
+from argparse import ArgumentParser
 
 
 PATH_LENGTH = 3
@@ -157,11 +158,16 @@ def process_log(log, sample_rate=0.1):
 
 
 def main():
+    parser = ArgumentParser()
+    parser.add_argument("--sample-rate", type=float, default=0.1)
+    parser.add_argument("--points", type=int, default=30000)
+    args = parser.parse_args()
+
     states = []
     for row in fetch_all_logs():
         log = json.loads(row["log"])
-        states += process_log(log)
-        if len(states) > 30000:
+        states += process_log(log, args.sample_rate)
+        if len(states) > args.points:
             break
     df = pd.DataFrame(states)
     artifact_dir = Path(ROOT_DIR / "mimi_artifacts")
