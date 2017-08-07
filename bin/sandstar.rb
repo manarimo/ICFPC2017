@@ -277,21 +277,29 @@ end
 
 reader = Reader.new(STDIN)
 
-run(ARGV[0], "HANDSHAKE\n") do |out, err|
-  my_name = out.chomp
+if ARGV[0] == 'prod'
   payload = {
-    me: my_name
+      me: 'Adlersprung'
   }
   print_json(STDOUT, payload)
   reader.read_json
-  # STDERR.puts err
+else
+  run(ARGV[0], "HANDSHAKE\n") do |out, err|
+    my_name = out.chomp
+    payload = {
+      me: my_name
+    }
+    print_json(STDOUT, payload)
+    reader.read_json
+    # STDERR.puts err
+  end
 end
 
 
 json = reader.read_json
 if json.key?('punter')
   obj = State.from_json(json)
-  if ARGV[1] == 'prod'
+  if ARGV[0] == 'prod'
     app = determine_app(obj)
   else
     app = ARGV[0]
@@ -326,7 +334,7 @@ elsif json.key?('move')
 MOVE
 #{obj.to_kyopro}
 END
-  if ARGV[1] == 'prod'
+  if ARGV[0] == 'prod'
     app = determine_app(obj)
   else
     app = ARGV[0]
