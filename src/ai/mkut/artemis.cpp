@@ -17,7 +17,7 @@ bool checkTimeOut() {
     clock_t t = clock() - start;
     double tsec = ((double)t) / CLOCKS_PER_SEC;
     //cerr << tsec << endl;
-    if (tsec > 0.8) {
+    if (tsec > 0.7) {
         return true;
     }
     return false;
