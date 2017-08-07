@@ -161,7 +161,7 @@ def main():
     for row in fetch_all_logs():
         log = json.loads(row["log"])
         states += process_log(log)
-        if len(states) > 3000:
+        if len(states) > 30000:
             break
     df = pd.DataFrame(states)
     artifact_dir = Path(ROOT_DIR / "mimi_artifacts")
