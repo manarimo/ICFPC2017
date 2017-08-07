@@ -74,16 +74,18 @@ def calculate_color(ratio):
     yellow = [242, 229, 92]
     green = [57, 168, 105]
     color = []
+    if ratio < 0.5:
+        left = red
+        right = yellow
+        ratio *= 2
+    else:
+        left = yellow
+        right = green
+        ratio = (ratio - 0.5) * 2
+            
     for i in range(3):
-        if ratio < 0.5:
-            left = red
-            right = yellow
-            ratio *= 2
-        else:
-            left = yellow
-            right = green
-            ratio = (ratio - 0.5) * 2
         color.append(format(int(right[i] * ratio + left[i] * (1 - ratio)), "02X"))
+
     return "#{}".format("".join(color))
 
 def main():
