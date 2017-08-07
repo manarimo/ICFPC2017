@@ -131,7 +131,35 @@ public class MapGen {
         System.out.println(new ObjectMapper().writeValueAsString(map));
     }
 
+    public static void donut() throws IOException {
+        final int n = 30;
+        final int m = 3;
+
+        final Random random = new Random();
+        final double pMine = 0.2;
+
+        final Map map = new Map();
+        map.sites = new ArrayList<>();
+        map.mines = new ArrayList<>();
+        map.rivers = new ArrayList<>();
+
+        for (int j = 0; j < m; ++j) {
+            for (int i = 0; i < n; ++i) {
+                double DO = 360.0 * i / n;
+                double x = Math.cos(Math.toRadians(DO));
+                double y = Math.sin(Math.toRadians(DO));
+                map.sites.add(new Site(j * n + i, x * (j + 1), y * (j + 1)));
+                if (j != m - 1) map.rivers.add(new River(j * n + i, (j + 1) * n + i));
+                map.rivers.add(new River(j * n + i, (j * n + (i + 1) % n)));
+                if (random.nextDouble() < pMine) {
+                    map.mines.add(j * n + i);
+                }
+            }
+            System.out.println(new ObjectMapper().writeValueAsString(map));
+        }
+    }
+
     public static void main(String[] args) throws IOException {
-        rand();
+        donut();
     }
 }
