@@ -59,7 +59,7 @@ def process_log(log, sample_rate=0.1):
         move = update["move"]
         punter_id = move["claim"]["punter"]
         if random.random() < sample_rate:
-            vec = feature_vector(graph, mines, edge_owner, punter_id)
+            vec = feature_vector(graph, mines, edge_owner, punter_id, PATH_LENGTH, TO_SAMPLE)
             target = punters[punter_id]["raw_score"]
             vec.append(target)
             vectors.append(vec)
