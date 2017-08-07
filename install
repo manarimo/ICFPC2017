@@ -3,4 +3,5 @@
 # write everything you need to build here.
 
 mkdir -p build
+g++ -O3 -std=c++11 -o build/artemis src/ai/mkut/artemis.cpp
 g++ -O3 -std=c++11 -o build/kawatea_careful src/ai/kawatea/careful.cpp
