@@ -103,9 +103,9 @@ public class MapGen {
     }
 
     public static void rand() throws IOException {
-        final int n = 40;
-        final double pRiver = 0.7;
-        final double pMine = 0.5;
+        final int n = 20;
+        final double pRiver = 1;
+        final double pMine = 100;
         final Random random = new Random();
         final Map map = new Map();
         map.sites = new ArrayList<>();
@@ -160,6 +160,6 @@ public class MapGen {
     }
 
     public static void main(String[] args) throws IOException {
-        donut();
+        rand();
     }
 }
