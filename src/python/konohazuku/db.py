@@ -9,9 +9,14 @@ def fetch_all_logs():
         conn = MySQLdb.connect(host="35.194.126.173", user="root", passwd="kaban", db="adlersprung")
 
         cursor = conn.cursor(DictCursor)
-        cursor.execute("SELECT * FROM match_log")
-        for row in cursor.fetchall():
-            yield row
+        while True:
+            offset = 0
+            items = cursor.execute("SELECT * FROM match_log LIMIT 1000 OFFSET ?", offset)
+            if items == 0:
+                break
+            offset += items
+            for row in cursor.fetchall():
+                yield row
     finally:
         conn.close()
 
