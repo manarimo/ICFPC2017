@@ -157,7 +157,7 @@ public class GameServer {
                 final OutputStream outputStream = exec.getOutputStream();
                 JsonUtil.write(outputStream, request);
                 outputStream.close();
-                setTimeout(exec, 1);
+                setTimeout(exec, 5);
 
                 try {
                     final GameplayResponse response = JsonUtil.read(inputStream, GameplayResponse.class);
@@ -223,6 +223,7 @@ public class GameServer {
             final River realRiver = removeRiver(river);
             claimedRivers.get(claim.punter).add(realRiver);
             history.add(move);
+            System.err.println(objectMapper.writeValueAsString(move));
             skipping.set(punterId, 0);
             return;
         }
@@ -273,7 +274,9 @@ public class GameServer {
                 claimedRivers.get(move.splurge.punter).add(realRiver);
             }
             history.add(move);
+            System.err.println(objectMapper.writeValueAsString(move));
             skipping.set(punterId, 0);
+            optionCharge.set(punterId, optionCharge.get(punterId) - riversToOption.size());
             return;
         }
         if (move.option != null) {
@@ -306,7 +309,9 @@ public class GameServer {
             final River realRiver = removeOptionRiver(river);
             claimedRivers.get(option.punter).add(realRiver);
             history.add(move);
+            System.err.println(objectMapper.writeValueAsString(move));
             skipping.set(punterId, 0);
+            optionCharge.set(punterId, optionCharge.get(punterId) - 1);
             return;
 
         }
