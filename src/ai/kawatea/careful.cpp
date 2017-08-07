@@ -301,7 +301,7 @@ void init() {
 }
 
 int calc_dist(int v1, int v2, int id) {
-    int base = INF, level = 0;
+    int base = INF;
     vector<vector<bool>> visited(graph.size(), vector<bool>(options + 1));
     vector<vector<int>> dist(graph.size(), vector<int>(options + 1));
     deque<pair<int, int>> q;
@@ -322,10 +322,7 @@ int calc_dist(int v1, int v2, int id) {
         visited[last][count] = true;
         
         if (last == v2) {
-            if (dist[v2][count] + count < base) {
-                base = dist[v2][count] + count;
-                level = count;
-            }
+            if (dist[v2][count] + count < base) base = dist[v2][count] + count;
         }
         
         if (dist[last][count] >= base) return base;
@@ -360,7 +357,7 @@ int calc_dist(int v1, int v2, int id) {
 
 void connect(int v1, int v2) {
     bool option = false;
-    int base = INF, best = -1, id = -1;
+    int best = -1, id = -1;
     long long sum = 0, best_status = 0;
     vector<vector<bool>> visited(graph.size(), vector<bool>(options + 1));
     vector<vector<int>> dist1(graph.size(), vector<int>(options + 1));
@@ -423,7 +420,6 @@ void connect(int v1, int v2) {
         for (int j = 0; j < i; j++) {
             if (dist1[v2][i] > dist1[v2][j] + j - i) dist1[v2][i] = INF;
         }
-        base = min(base, dist1[v2][i] + i);
         if (dist1[v2][i] < INF) sum = min(sum + sum1[v2][i], INF2);
     }
     
@@ -592,47 +588,40 @@ void connect() {
     }
 }
 
-void surround() {
-    int best = 0, id = -1;
-    vector<pair<int, int>> order;
+void surround(double base) {
+    int id = -1;
+    double best = base;
     
     for (int mine : mines.get_mines()) {
         int rest = 0;
         for (const Edge& edge : graph[mine]) {
             if (!edge.used && !edge.option) rest++;
         }
-        if (rest > 0) order.push_back(make_pair(rest, mine));
-    }
-    sort(order.begin(), order.end());
-    
-    for (int i = 0; i < order.size(); i++) {
-        int mine = order[i].second;
+        
         for (const Edge& edge : graph[mine]) {
-            int count1 = punter, count2 = 0;
+            double score = 0;
             if (edge.used || edge.option) continue;
             for (int j = 0; j < punter; j++) {
                 if (j == punter_id) continue;
                 if (uf[j].get_mines(mine).size() == 1) continue;
                 if (degree[j][mine] == 0) {
                     if (degree[j][edge.to] > 0) {
-                        count1++;
+                        score += 2;
                     } else {
-                        count2++;
+                        score++;
                     }
                 }
             }
-            if ((count1 - punter > 0 && count1 > best) || count2 > best) {
-                best = max(count1, count2);
+            score *= graph.size();
+            score /= (punter - 1) * (punter - 1) * rest * mines.get_count();
+            if (score > best ) {
+                best = score;
                 id = edge.id;
             }
         }
     }
     
-    if (best > 0) {
-        output(id);
-    } else {
-        stage++;
-    }
+    if (id != -1) output(id);
 }
 
 void extend() {
@@ -720,8 +709,10 @@ void extend() {
     }
 }
 
-void prevent() {
-    int best = INF, id = -1;
+void disturb() {
+    int id = -1;
+    double best = 0;
+    vector<int> rest(graph.size());
     
     for (int mine : mines.get_mines()) {
         for (const Edge& edge : graph[mine]) {
@@ -731,10 +722,22 @@ void prevent() {
     
     for (int i = 0; i < graph.size(); i++) {
         for (const Edge& edge : graph[i]) {
+            if (!edge.used && !edge.option) rest[i]++;
+        }
+    }
+    
+    for (int i = 0; i < graph.size(); i++) {
+        for (const Edge& edge : graph[i]) {
             if (!edge.used && !edge.option) {
-                int degree = (graph[i].size() + 1) * (graph[edge.to].size() + 1);
-                if (degree < best) {
-                    best = degree;
+                double score = 1;
+                for (int j = 0; j < punter; j++) {
+                    if (j == punter_id) continue;
+                    if ((degree[j][i] == 0 && degree[j][edge.to] > 0) || (degree[j][i] > 0 && degree[j][edge.to] == 0)) score++;
+                }
+                score *= score;
+                score /= rest[i] * rest[edge.to];
+                if (score > best) {
+                    best = score;
                     id = edge.id;
                 }
             }
@@ -746,9 +749,10 @@ void prevent() {
 
 void move() {
     if (stage == 0) connect();
-    if (stage == 1) surround();
-    if (stage == 2) extend();
-    if (stage == 3) prevent();
+    surround(1.0);
+    if (stage == 1) extend();
+    surround(0.0);
+    disturb();
 }
 
 void end() {
