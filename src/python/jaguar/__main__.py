@@ -21,7 +21,9 @@ class Game(object):
         self.edges = edges
 
     def feature_vector(self):
-        return feature_vector(self.graph, self.mines, self.edge_owner, self.punter_id, 3, 10000)
+        sample = 1000
+        fv = feature_vector(self.graph, self.mines, self.edge_owner, self.punter_id, 3, sample)
+        return [v * 10000 / sample for v in fv]
 
 
 class State(object):
@@ -39,9 +41,7 @@ def read_game(f):
     punter_id = read_int()
     nodes = read_int()
     mine_count = read_int()
-    mines = []
-    for i in range(mine_count):
-        mines.append(read_int())
+    mines = [int(c) for c in f.readline().split()]
     edge_count = read_int()
     graph = {i: [] for i in range(nodes)}
     edge_owner = {}
@@ -58,6 +58,12 @@ def read_game(f):
             ow1 = None
         edge_owner[edge_key(fr, to)] = ow1
         edges.append(edge_key(fr, to))
+    f.readline()  # skip empty line
+    extension_count = read_int()
+    extensions = []
+    for i in range(extension_count):
+        extensions.append(f.readline().strip())
+    f.readline()
     return Game(graph, mines, edge_owner, punters, punter_id, edges)
 
 
@@ -130,10 +136,10 @@ MOVE
 0
 2
 0 1 -1
-1 2 -1
+1 2 0
 gANjX19tYWluX18KU3RhdGUKcQApgXEBfXECWAEAAAB4cQNLAXNiLg==
 """
 
 
 if __name__ == '__main__':
-    main(StringIO(TEST_MOVE))
+    main()
