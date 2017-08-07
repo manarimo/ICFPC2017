@@ -6,13 +6,20 @@
 #include <algorithm>
 #include <fstream>
 #include <cmath>
+#include <ctime>
 
 using namespace std;
 
-bool debug  = false;
-//ofstream ofs;
-ostream &ofs = cerr;
-//ofstream ofs("out", ios_base::out | ios_base::app);
+clock_t start;
+
+bool checkTimeOut() {
+    clock_t t = clock() - start;
+    double tsec = ((double)t) / CLOCKS_PER_SEC;
+    if (tsec > 0.9) {
+        return true;
+    }
+    return false;
+}
 
 struct Edge {
     int from;
@@ -225,7 +232,6 @@ double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPa
     if (minPathScore.find(xdame) != minPathScore.end()) {
         return minPathScore[xdame];
     }
-    if (debug) ofs << "IN" << x << "(" << dame << ")" << endl;
     double ret = 0;
     ret += dist2[x];
     if (dist[x] + dame < rTurn) {
@@ -233,7 +239,6 @@ double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPa
             Edge& e = game.edge[es[x][i]];
             int to = uf.find(e.from) == x ? e.to : e.from;
             to = uf.find(to);
-            if (debug) ofs << dist[x] << "," << dist[to] << endl;
             pair<int, int> next;
             if (dist[x] < dist[to]) {
                 next = make_pair(to, dame);
@@ -249,19 +254,17 @@ double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPa
             if (!enemy) {
                 probEffect = 1 - ep;
             } else if (e.owner == -1) {
-                probEffect = ep - occupiedProb(game, settings, numOption, rTurn);
+                probEffect = (ep - occupiedProb(game, settings, numOption, rTurn)) / max(1, game.punter - 1);
             } else {
-                probEffect = ep;
+                probEffect = ep / max(1, game.punter - 1);
             }
             score[es[x][i]] += nscore * pathNum[xdame] * probEffect;
-            if (debug) ofs << "edge" << es[x][i] << "/" << score[es[x][i]] << endl;
         }
     }
-    if (debug) ofs << "OUT" << x << " " << ret << endl;
     return minPathScore[xdame] = ret;
 }
 
-vector<double> edgeScore(Game &game, Settings& settings, vector<vector<int> >& stateDist, int numOption, int rTurn, bool enemy, int punterId) {
+void edgeScore(vector<double>& score, Game &game, Settings& settings, vector<vector<int> >& stateDist, int numOption, int rTurn, bool enemy, int punterId) {
     UnionFind uf(game.n);
     for (int i = 0; i < game.m; i++) {
         if (game.edge[i].owner == punterId || game.edge[i].option == punterId) {
@@ -274,8 +277,6 @@ vector<double> edgeScore(Game &game, Settings& settings, vector<vector<int> >& s
         unions[uf.find(i)].push_back(i);
     }
 
-    vector<double> score(game.m);
-
     vector<vector<int> > es(game.n);
     for (int i = 0; i < game.m; i++) {
         Edge &e = game.edge[i];
@@ -287,16 +288,6 @@ vector<double> edgeScore(Game &game, Settings& settings, vector<vector<int> >& s
         if (canClaim(e, settings, numOption, punterId)) {
             es[from].push_back(i);
             es[to].push_back(i);
-        }
-    }
-
-    if (debug) {
-        ofs << "ES" << endl;
-        for (int i = 0; i < es.size(); i++) {
-            for (int j = 0; j < es[i].size(); j++) {
-                ofs << es[i][j] << " ";
-            }
-            ofs << endl;
         }
     }
 
@@ -313,16 +304,6 @@ vector<double> edgeScore(Game &game, Settings& settings, vector<vector<int> >& s
         }
     }
 
-    if (debug) {
-        ofs << "DIST2" << endl;
-        for (int i = 0; i < dist2.size(); i++) {
-            for (int j = 0; j < dist2[i].size(); j++) {
-                ofs << dist2[i][j] << " ";
-            }
-            ofs << endl;
-        }
-    }
-
     for (int i = 0; i < game.mines; i++) {
         int mine = uf.find(game.mine[i]);
         pair<int, int> start = make_pair(mine, 0);
@@ -336,12 +317,10 @@ vector<double> edgeScore(Game &game, Settings& settings, vector<vector<int> >& s
             for (set<pair<int, int> >::iterator it = q.begin(); it != q.end(); ++it) {
                 int x = it->first;
                 int dame = it->second;
-                if (debug) ofs << x << "," << dame << endl;
                 for (int j = 0; j < es[x].size(); j++) {
                     Edge &e = game.edge[es[x][j]];
                     int to = uf.find(e.from) == x ? e.to : e.from;
                     to = uf.find(to);
-                    if (debug) ofs << " " << to << endl;
                     if (dist.find(to) == dist.end() || dist[to] == dist[x] + 1) {
                         pair<int, int> next = make_pair(to, dame);
                         pathNum[next] += pathNum[*it] * edgeProb(game, settings, numOption, rTurn, e.owner == -1);
@@ -354,30 +333,18 @@ vector<double> edgeScore(Game &game, Settings& settings, vector<vector<int> >& s
                     }
                 }
             }
-            if (debug) ofs << "===" << endl;
             q = nq;
-        }
-
-        if (debug) {
-            ofs << "PATHNUM" << endl;
-            for (map<pair<int, int>, double>::iterator it = pathNum.begin(); it != pathNum.end(); ++it) {
-                ofs << it->first.first << "(" << it->first.second << "):" << it->second << endl;
-            }
-
-            ofs << "DIST" << endl;
-            for (map<int, int>::iterator it = dist.begin(); it != dist.end(); ++it) {
-                ofs << it->first << ":" << it->second << endl;
-            }
         }
 
         map<pair<int, int>, double> minPathScore;
         getMinPathScore(score, minPathScore, pathNum, dist, dist2[i], es, game, settings, numOption, rTurn, enemy, uf, start);
     }
-    return score;
 }
 
 Result move(Game &game, Settings& settings, State &state) {
-    vector<double> score = edgeScore(game, settings, state.dist, state.numOption, state.rTurn, false, game.punter_id);
+
+    vector<double> score(game.m);
+    edgeScore(score, game, settings, state.dist, state.numOption, state.rTurn, false, game.punter_id);
 
     vector<int> enemyNumOption(game.punter, game.mines);
     for (int i = 0; i < game.m; i++) {
@@ -386,48 +353,16 @@ Result move(Game &game, Settings& settings, State &state) {
         }
     }
 
-    if (debug) ofs << "SCORE (me)" << endl;
-    for (int i = 0; i < game.m; i++) {
-        if (canClaim(game.edge[i], settings, state.numOption, game.punter_id)) {
-            if (debug) ofs << i << ":" << score[i] << endl;
-        }
-    }
-
     for (int i = 0; i < game.punter; i++) {
+        if (checkTimeOut()) {
+            break;
+        }
         if (i == game.punter_id) continue;
-        vector<double> enemyScore = edgeScore(game, settings, state.dist, enemyNumOption[i], state.enemyRTurn[i], true, i);
-
-        if (debug) ofs << "SCORE (" << i << ")" << endl;
-        for (int j = 0; j < game.m; j++) {
-            if (canClaim(game.edge[i], settings, enemyNumOption[i], i)) {
-                if (debug) ofs << j << ":" << enemyScore[j] << endl;
-            }
-        }
-
-        for (int j = 0; j < game.m; j++) {
-            double probEffect;
-            if (game.edge[j].owner == -1) {
-                probEffect = openProb(game, settings, enemyNumOption[i], state.enemyRTurn[i]) - occupiedProb(game, settings, enemyNumOption[i], state.enemyRTurn[i]);
-            } else {
-                probEffect = occupiedProb(game, settings, enemyNumOption[i], state.enemyRTurn[i]);
-            }
-            score[j] += enemyScore[j] * probEffect / max(1, game.punter - 1);
-        }
+        edgeScore(score, game, settings, state.dist, enemyNumOption[i], state.enemyRTurn[i], true, i);
     }
 
     double maxScore = 0;
     int maxIdx = -1;
-
-    if (debug) ofs << "SCORE" << endl;
-    for (int i = 0; i < game.m; i++) {
-        if (canClaim(game.edge[i], settings, state.numOption, game.punter_id)) {
-            if (debug) ofs << i << ":" << score[i] << endl;
-            if (maxScore < score[i]) {
-                maxScore = score[i];
-                maxIdx = i;
-            }
-        }
-    }
 
     if (maxIdx == -1) {
         for (int i = 0; i < game.m; i++) {
@@ -448,12 +383,11 @@ Result move(Game &game, Settings& settings, State &state) {
         state.enemyRTurn[i] = max(1, state.enemyRTurn[i] - 1);
     }
 
-    if (debug) ofs << "numOption=" << state.numOption << endl;
-
     return Result {maxIdx, state};
 }
 
 int main() {
+    start = clock();
     string command;
     cin >> command;
 
