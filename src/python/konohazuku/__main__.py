@@ -1,13 +1,13 @@
-from pathlib import Path
 import json
-from collections import Counter, defaultdict
-import elo
-import pandas as pd
-import numpy as np
-import MySQLdb
-from MySQLdb.cursors import DictCursor
 from argparse import ArgumentParser
+from collections import Counter, defaultdict
+from pathlib import Path
 
+import numpy as np
+import pandas as pd
+
+from konohazuku import elo
+from konohazuku.db import fetch_results_db
 
 LOGS_DIR = Path("/var/local/logs/")
 ROOT_DIR = Path(__file__).absolute().parent.parent.parent.parent
@@ -16,31 +16,6 @@ ROOT_DIR = Path(__file__).absolute().parent.parent.parent.parent
 def prob(win, all, draw):
     nall = all - draw
     return win / nall if nall > 0 else 0.
-
-
-def fetch_results_db():
-    try:
-        conn = MySQLdb.connect(host="35.194.126.173", user="root", passwd="kaban", db="adlersprung")
-
-        cursor = conn.cursor(DictCursor)
-        cursor.execute("SELECT * FROM match_log")
-        for row in cursor.fetchall():
-            log_data = json.loads(row["log"])
-            if "tag_names" not in log_data:
-                continue
-            all_names = log_data["tag_names"]
-            if "scores" not in log_data:
-                continue
-            raw_scores = [-1] * len(all_names)
-            for sc in log_data["scores"]:
-                raw_scores[sc["punter"]] = sc["score"]
-            rank_scores = [len([s for s in raw_scores if s <= score]) for score in raw_scores]
-            punter_rank_scores = defaultdict(list)
-            for name, rank_score in zip(all_names, rank_scores):
-                punter_rank_scores[name].append(rank_score)
-            yield punter_rank_scores
-    finally:
-        conn.close()
 
 
 def fetch_results_file():

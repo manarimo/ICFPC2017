@@ -22,6 +22,7 @@ public class GameServer {
     private final Map map;
     private final java.util.Map<Integer, Set<River>> claimedRivers;
     private final Set<River> remainingRivers;
+    private final Set<River> optionRivers;
     private final List<String> ais;
     private final List<JsonNode> states;
     private final List<Move> history;
@@ -31,6 +32,7 @@ public class GameServer {
     private final List<String> names;
     private final List<Boolean> zombie;
     private final List<Integer> skipping;
+    private final List<Integer> optionCharge;
 
     // siteId of mine -> siteId -> distance
     private final java.util.Map<Integer, java.util.Map<Integer, Integer>> distances;
@@ -42,6 +44,7 @@ public class GameServer {
             claimedRivers.put(i, new HashSet<>());
         }
         remainingRivers = new HashSet<>(map.rivers);
+        optionRivers = new HashSet<>(map.rivers);
         this.ais = ais;
         states = new ArrayList<>();
         for (int i = 0; i < ais.size(); i++) {
@@ -95,6 +98,10 @@ public class GameServer {
         for (int i = 0; i < ais.size(); i++) {
             skipping.add(0);
         }
+        optionCharge = new ArrayList<>();
+        for (int i = 0; i < ais.size(); i++) {
+            optionCharge.add(map.mines.size());
+        }
         System.err.println("Server initialized.");
     }
 
@@ -122,6 +129,7 @@ public class GameServer {
             } catch (final Exception e) {
                 System.err.println("ERROR");
                 zombie.set(i, true);
+            } finally {
                 final InputStream errorStream = exec.getErrorStream();
                 final Scanner scanner = new Scanner(errorStream);
                 while (scanner.hasNextLine()) {
@@ -156,8 +164,9 @@ public class GameServer {
                     move = response.toMove();
                     states.set(punterId, response.state);
                 } catch (final Exception e) {
-                    System.err.println("ERROR");
+                    System.err.println("ERROR " + e);
                     zombie.set(punterId, true);
+                } finally {
                     final InputStream errorStream = exec.getErrorStream();
                     final Scanner scanner = new Scanner(errorStream);
                     while (scanner.hasNextLine()) {
@@ -192,61 +201,148 @@ public class GameServer {
     }
 
     private void pass(final int punterId, final String message) {
+        if (message != null) {
+            System.err.println(message);
+        }
         history.add(Move.of(new Move.Pass(punterId)));
-        System.err.println(message);
         skipping.set(punterId, skipping.get(punterId) + 1);
     }
 
     private void handle(final Move move, final int punterId) throws IOException {
-        if (move.claim == null) {
-            pass(punterId, null);
+        if (move.claim != null) {
+            final Move.Claim claim = move.claim;
+            River river = claim.toRiver();
+            if (claim.punter != punterId) {
+                pass(punterId, "他人を騙るのはやめましょう。");
+                return;
+            }
+            if (!containsRiver(river)) {
+                pass(punterId, "それ、取られてますよ。");
+                return;
+            }
+            final River realRiver = removeRiver(river);
+            claimedRivers.get(claim.punter).add(realRiver);
+            history.add(move);
+            skipping.set(punterId, 0);
             return;
         }
         if (move.splurge != null) {
             if (!settings.splurges) {
                 pass(punterId, "Splurges が有効になっていません。");
+                return;
+            }
+            if (move.splurge.punter != punterId) {
+                pass(punterId, "他人を騙るのはやめましょう。");
+                return;
             }
             if (move.splurge.route.size() - 2 > skipping.get(punterId)) {
                 pass(punterId, String.format("有給申請 %d日 残有給: %d日", move.splurge.route.size() - 2, skipping.get(punterId)));
                 return;
             }
+            final Set<River> riversToOption = new HashSet<>();
             for (final River river : move.splurge.toRivers()) {
                 if (!containsRiver(river)) {
-                    pass(punterId, "それ、先月までなんですよ。");
+                    if (!settings.options) {
+                        pass(punterId, "それ、取られてますよ。");
+                        return;
+                    }
+                    if (doContainsRiver(claimedRivers.get(move.splurge.punter), river)) {
+                        pass(punterId, "自作自演乙");
+                        return;
+                    }
+                    riversToOption.add(river);
+                }
+            }
+            for (final River river : riversToOption) {
+                if (!containsOptionRiver(river)) {
+                    pass(punterId, "option？ないんだな、それが。");
                     return;
                 }
             }
-            for (final River river : move.splurge.toRivers()) {
-                River realRiver = removeRiver(river);
-                claimedRivers.get(move.splurge.punter).add(realRiver);
-                history.add(move);
-                skipping.set(punterId, 0);
+            if (optionCharge.get(punterId) < riversToOption.size()) {
+                pass(punterId, "もしかして、option使いすぎ？");
+                return;
             }
-        }
-        final Move.Claim claim = move.claim;
-        River river = claim.toRiver();
-        if (!remainingRivers.contains(river)) {
-            pass(punterId, "それ、取られてますよ。");
+            for (final River river : move.splurge.toRivers()) {
+                final River realRiver;
+                if (containsRiver(river)) {
+                    realRiver = removeRiver(river);
+                } else {
+                    realRiver = removeOptionRiver(river);
+                }
+                claimedRivers.get(move.splurge.punter).add(realRiver);
+            }
+            history.add(move);
+            skipping.set(punterId, 0);
             return;
         }
-        remainingRivers.remove(river);
-        claimedRivers.get(claim.punter).add(river);
-        history.add(move);
-        skipping.set(punterId, 0);
+        if (move.option != null) {
+            final Move.Option option = move.option;
+            River river = option.toRiver();
+            if (!settings.options) {
+                pass(punterId, "Options が有効になっていません。");
+                return;
+            }
+            if (option.punter != punterId) {
+                pass(punterId, "他人を騙るのはやめましょう。");
+                return;
+            }
+            if (containsRiver(river)) {
+                pass(punterId, "誰もclaimしてないのにoption使うのはNG。");
+                return;
+            }
+            if (!containsOptionRiver(river)) {
+                pass(punterId, "option？ないんだな、それが。");
+                return;
+            }
+            if (optionCharge.get(punterId) < 1) {
+                pass(punterId, "もしかして、option使いすぎ？");
+                return;
+            }
+            if (doContainsRiver(claimedRivers.get(option.punter), river)) {
+                pass(punterId, "自作自演乙");
+                return;
+            }
+            final River realRiver = removeOptionRiver(river);
+            claimedRivers.get(option.punter).add(realRiver);
+            history.add(move);
+            skipping.set(punterId, 0);
+            return;
+
+        }
+        pass(punterId, null);
     }
 
     private boolean containsRiver(final River river) {
-        return remainingRivers.contains(river) || remainingRivers.contains(river.reverse());
+        return doContainsRiver(remainingRivers, river);
+    }
+
+    private boolean containsOptionRiver(final River river) {
+        return doContainsRiver(optionRivers, river);
+    }
+
+    private static boolean doContainsRiver(final Set<River> rivers, final River river) {
+        return rivers.contains(river) || rivers.contains(river.reverse());
     }
 
     private River removeRiver(final River river) {
-        if (remainingRivers.contains(river)) {
-            remainingRivers.remove(river);
+        return doRemoveRiver(remainingRivers, river);
+    }
+
+    private River removeOptionRiver(final River river) {
+        return doRemoveRiver(optionRivers, river);
+    }
+
+    private static River doRemoveRiver(final Set<River> rivers, final River river) {
+        if (rivers.contains(river)) {
+            rivers.remove(river);
             return river;
         } else {
-            remainingRivers.remove(river.reverse());
-            return null;
+            final River reverse = river.reverse();
+            rivers.remove(reverse);
+            return reverse;
         }
+
     }
 
     private Integer findFutureTarget(final int punterId, final int mineSiteId) {

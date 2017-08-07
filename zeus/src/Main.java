@@ -48,6 +48,9 @@ public class Main {
         if (parse.hasOption("x2")) {
             settings.splurges = true;
         }
+        if (parse.hasOption("x3")) {
+            settings.options = true;
+        }
 
         final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES,false);
@@ -61,6 +64,7 @@ public class Main {
         public ZeusOptions() {
             addOption("x1", false, "Futures 1.0");
             addOption("x2", false, "Splurges 1.0");
+            addOption("x3", false, "Options 1.0");
         }
     }
 }
