@@ -272,7 +272,13 @@ def run(cmd, input)
 end
 
 def determine_app(state)
-  "#{__dir__}/../build/artemis"
+  if state.map.mines.size == 1
+    "#{__dir__}/../build/artemis"
+  elsif state.map.rivers.size * state.map.mines.size > 100000
+    "#{__dir__}/../build/kawatea_careful"
+  else
+    "#{__dir__}/../build/kawatea_careful"
+  end
 end
 
 reader = Reader.new(STDIN)
@@ -335,7 +341,7 @@ MOVE
 #{obj.to_kyopro}
 END
   if ARGV[0] == 'prod'
-    app = determine_app(obj)
+    app = determine_app(obj.state)
   else
     app = ARGV[0]
   end
