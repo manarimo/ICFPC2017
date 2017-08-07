@@ -111,6 +111,7 @@ class UnionFind {
 
 int stage = 0;
 int options = 0;
+int options_limit = 0;
 vector<Edge2> edges;
 vector<vector<Edge>> graph;
 vector<vector<int>> degree;
@@ -221,6 +222,7 @@ void input(bool read_state) {
     if (read_state) {
         scanf("%d", &stage);
         scanf("%d", &options);
+        options_limit = min(options, 10);
         for (int i = 0; i < mine; i++) {
             for (int j = 0; j < n; j++) {
                 int d;
@@ -302,12 +304,12 @@ void init() {
 
 int calc_dist(int v1, int v2, int id) {
     int base = INF;
-    vector<vector<bool>> visited(graph.size(), vector<bool>(options + 1));
-    vector<vector<int>> dist(graph.size(), vector<int>(options + 1));
+    vector<vector<bool>> visited(graph.size(), vector<bool>(options_limit + 1));
+    vector<vector<int>> dist(graph.size(), vector<int>(options_limit + 1));
     deque<pair<int, int>> q;
     
     for (int i = 0; i < graph.size(); i++) {
-        for (int j = 0; j <= options; j++) {
+        for (int j = 0; j <= options_limit; j++) {
             dist[i][j] = INF;
         }
     }
@@ -337,7 +339,7 @@ int calc_dist(int v1, int v2, int id) {
                     q.push_front(make_pair(next, count));
                 }
             } else if (edge.option) {
-                if (count < options) {
+                if (count < options_limit) {
                     if (dist[next][count + 1] > dist[last][count] + 1) {
                         dist[next][count + 1] = dist[last][count] + 1;
                         q.push_back(make_pair(next, count + 1));
@@ -359,16 +361,16 @@ void connect(int v1, int v2) {
     bool option = false;
     int best = -1, id = -1;
     long long sum = 0, best_status = 0;
-    vector<vector<bool>> visited(graph.size(), vector<bool>(options + 1));
-    vector<vector<int>> dist1(graph.size(), vector<int>(options + 1));
-    vector<vector<int>> dist2(graph.size(), vector<int>(options + 1));
-    vector<vector<long long>> sum1(graph.size(), vector<long long>(options + 1));
-    vector<vector<long long>> sum2(graph.size(), vector<long long>(options + 1));
+    vector<vector<bool>> visited(graph.size(), vector<bool>(options_limit + 1));
+    vector<vector<int>> dist1(graph.size(), vector<int>(options_limit + 1));
+    vector<vector<int>> dist2(graph.size(), vector<int>(options_limit + 1));
+    vector<vector<long long>> sum1(graph.size(), vector<long long>(options_limit + 1));
+    vector<vector<long long>> sum2(graph.size(), vector<long long>(options_limit + 1));
     vector<long long> root(edges.size());
     deque<pair<int, int>> q;
     
     for (int i = 0; i < graph.size(); i++) {
-        for (int j = 0; j <= options; j++) {
+        for (int j = 0; j <= options_limit; j++) {
             dist1[i][j] = INF;
         }
     }
@@ -395,7 +397,7 @@ void connect(int v1, int v2) {
                     if (!visited[next][count]) sum1[next][count] = min(sum1[next][count] + sum1[last][count], INF2);
                 }
             } else if (edge.option) {
-                if (count < options) {
+                if (count < options_limit) {
                     if (dist1[next][count + 1] > dist1[last][count] + 1) {
                         dist1[next][count + 1] = dist1[last][count] + 1;
                         sum1[next][count + 1] = sum1[last][count];
@@ -416,7 +418,7 @@ void connect(int v1, int v2) {
         }
     }
     
-    for (int i = 0; i <= options; i++) {
+    for (int i = 0; i <= options_limit; i++) {
         for (int j = 0; j < i; j++) {
             if (dist1[v2][i] > dist1[v2][j] + j - i) dist1[v2][i] = INF;
         }
@@ -424,7 +426,7 @@ void connect(int v1, int v2) {
     }
     
     for (int i = 0; i < graph.size(); i++) {
-        for (int j = 0; j <= options; j++) {
+        for (int j = 0; j <= options_limit; j++) {
             visited[i][j] = false;
             dist2[i][j] = INF;
         }
@@ -452,7 +454,7 @@ void connect(int v1, int v2) {
                     if (!visited[next][count]) sum2[next][count] = min(sum2[next][count] + sum2[last][count], INF2);
                 }
             } else if (edge.option) {
-                for (int i = 0; i + count + 1 <= options; i++) {
+                for (int i = 0; i + count + 1 <= options_limit; i++) {
                     if (dist1[next][i] + dist2[last][count] + 1 == dist1[v2][i + count + 1]) {
                         if (INF2 / sum1[next][i] >= sum2[last][count]) {
                             root[edge.id] = min(root[edge.id] + sum1[next][i] * sum2[last][count], INF2);
@@ -461,7 +463,7 @@ void connect(int v1, int v2) {
                         }
                     }
                 }
-                if (count < options) {
+                if (count < options_limit) {
                     if (dist2[next][count + 1] > dist2[last][count] + 1) {
                         dist2[next][count + 1] = dist2[last][count] + 1;
                         sum2[next][count + 1] = sum2[last][count];
@@ -471,7 +473,7 @@ void connect(int v1, int v2) {
                     }
                 }
             } else {
-                for (int i = 0; i + count <= options; i++) {
+                for (int i = 0; i + count <= options_limit; i++) {
                     if (dist1[next][i] + dist2[last][count] + 1 == dist1[v2][i + count]) {
                         if (INF2 / sum1[next][i] >= sum2[last][count]) {
                             root[edge.id] = min(root[edge.id] + sum1[next][i] * sum2[last][count], INF2);
@@ -522,8 +524,8 @@ void connect() {
     int component = 0, v1 = -1, v2 = -1;
     double best = 0;
     vector<bool> used(mines.get_count());
-    vector<vector<bool>> visited(graph.size(), vector<bool>(options + 1));
-    vector<vector<int>> dist(graph.size(), vector<int>(options + 1));
+    vector<vector<bool>> visited(graph.size(), vector<bool>(options_limit + 1));
+    vector<vector<int>> dist(graph.size(), vector<int>(options_limit + 1));
     deque<pair<int, int>> q;
     
     for (int mine : mines.get_mines()) {
@@ -535,7 +537,7 @@ void connect() {
         if (component > mines.get_count() / 2 && uf[punter_id].get_mines(mine).size() != component) continue;
         
         for (int i = 0; i < graph.size(); i++) {
-            for (int j = 0; j <= options; j++) {
+            for (int j = 0; j <= options_limit; j++) {
                 visited[i][j] = false;
                 dist[i][j] = INF;
             }
@@ -567,7 +569,7 @@ void connect() {
                         q.push_front(make_pair(next, count));
                     }
                 } else if (edge.option) {
-                    if (count < options && dist[next][count + 1] > dist[last][count] + 1) {
+                    if (count < options_limit && dist[next][count + 1] > dist[last][count] + 1) {
                         dist[next][count + 1] = dist[last][count] + 1;
                         q.push_back(make_pair(next, count + 1));
                     }
