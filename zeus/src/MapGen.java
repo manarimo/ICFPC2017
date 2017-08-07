@@ -8,7 +8,41 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class MapGen {
-    public static void main(String[] args) throws IOException {
+    public static void houki() throws IOException {
+        final int eLen = 10;
+        final int keNum = 10;
+        final int keLen = 2;
+
+        final Map map = new Map();
+        map.sites = new ArrayList<>();
+        map.mines = new ArrayList<>();
+        map.rivers = new ArrayList<>();
+
+        int id = 0;
+        for (int i = 0; i < keNum; ++i) {
+            for (int j = 0; j < keLen; ++j) {
+                map.sites.add(new Site(id, -10 + i * 5, (j - 5) * (keNum - i)));
+                if (j == 0) {
+                    map.mines.add(id);
+                }
+                if (j != keLen - 1) {
+                    map.rivers.add(new River(id, id + 1));
+                } else {
+                    map.rivers.add(new River(id, keLen * keNum));
+                }
+                id++;
+            }
+        }
+
+        map.sites.add(new Site(id++, 0, 0));
+        for (int i = 0; i < eLen; ++i) {
+            map.rivers.add(new River(id - 1, id));
+            map.sites.add(new Site(id++, i * 5, 0));
+        }
+        System.out.println(new ObjectMapper().writeValueAsString(map));
+    }
+
+    public static void rand() throws IOException {
         final int n = 15;
         final double pRiver = 0.7;
         final double pMine = 0.1;
@@ -35,5 +69,9 @@ public class MapGen {
             }
         }
         System.out.println(new ObjectMapper().writeValueAsString(map));
+    }
+
+    public static void main(String[] args) throws IOException {
+        houki();
     }
 }
