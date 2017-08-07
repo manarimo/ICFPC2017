@@ -153,9 +153,37 @@ class Bridge {
     }
 } bridge;
 
+void calc_dist(const vector<vector<int>>& graph) {
+    int num = 0;
+    queue<int> q;
+    
+    all_dist = vector<vector<int>>(mines.get_count(), vector<int>(graph.size()));
+    
+    for (int mine : mines.get_mines()) {
+        for (int i = 0; i < graph.size(); i++) all_dist[num][i] = INF;
+        all_dist[num][mine] = 0;
+        q.push(mine);
+        
+        while (!q.empty()) {
+            int last = q.front();
+            q.pop();
+            
+            for (int next : graph[last]) {
+                if (all_dist[num][next] == INF) {
+                    all_dist[num][next] = all_dist[num][last] + 1;
+                    q.push(next);
+                }
+            }
+        }
+        
+        num++;
+    }
+}
+
 bool input(bool read_state) {
     int n, m, mine, setting;
     vector<pair<int, pair<int, int>>> option_edges;
+    vector<vector<int>> all_graph;
     
     scanf("%d", &punter);
     scanf("%d", &punter_id);
@@ -174,6 +202,7 @@ bool input(bool read_state) {
     
     scanf("%d", &m);
     graph.resize(n);
+    all_graph.resize(n);
     degree = vector<vector<int>>(punter, vector<int>(n));
     for (int i = 0; i < m; i++) {
         int from, to, owner1, owner2;
@@ -199,6 +228,9 @@ bool input(bool read_state) {
             option_edges.push_back(make_pair(i, make_pair(from, to)));
         }
         
+        all_graph[from].push_back(to);
+        all_graph[to].push_back(from);
+        
         if (owner1 != punter_id && owner1 != -1) {
             degree[owner1][from]++;
             degree[owner1][to]++;
@@ -218,17 +250,10 @@ bool input(bool read_state) {
         if (option[0] == 'o') options = mine;
     }
     
-    all_dist = vector<vector<int>>(mine, vector<int>(n));
     if (read_state) {
         scanf("%d", &stage);
         scanf("%d", &options);
-        for (int i = 0; i < mine; i++) {
-            for (int j = 0; j < n; j++) {
-                int d;
-                scanf("%d", &d);
-                all_dist[i][j] = d;
-            }
-        }
+        calc_dist(all_graph);
     }
     
     if (options > 0) {
@@ -249,12 +274,6 @@ bool input(bool read_state) {
 void output_state() {
     printf("%d\n", stage);
     printf("%d\n", options);
-    for (int i = 0; i < mines.get_count(); i++) {
-        for (int j = 0; j < graph.size(); j++) {
-            printf("%d ", all_dist[i][j]);
-        }
-    }
-    puts("");
     exit(0);
 }
 
