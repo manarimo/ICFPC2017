@@ -278,7 +278,8 @@ def determine_app(state)
   elsif state.map.rivers.size * state.map.mines.size > 100000
     "#{__dir__}/../build/kawatea_careful"
   else
-    ["#{__dir__}/../build/kawatea_careful", "#{__dir__}/../build/artemis"].sample
+    #["#{__dir__}/../build/kawatea_careful", "#{__dir__}/../build/artemis"].sample
+    "#{__dir__}/../build/kawatea_careful"
   end
 end
 
