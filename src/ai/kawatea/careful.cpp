@@ -112,6 +112,7 @@ class UnionFind {
 
 int stage = 0;
 int options = 0;
+int turn = 0;
 vector<Edge2> edges;
 vector<vector<Edge>> graph;
 vector<vector<int>> degree;
@@ -253,7 +254,11 @@ bool input(bool read_state) {
     if (read_state) {
         scanf("%d", &stage);
         scanf("%d", &options);
+        scanf("%d", &turn);
         calc_dist(all_graph);
+    } else {
+        turn = m / punter;
+        if (m % punter > punter_id) turn++;
     }
     
     if (options > 0) {
@@ -274,6 +279,7 @@ bool input(bool read_state) {
 void output_state() {
     printf("%d\n", stage);
     printf("%d\n", options);
+    printf("%d\n", turn);
     exit(0);
 }
 
@@ -286,6 +292,7 @@ void output(const vector<pair<int, int>>& futures) {
 
 void output(int id, bool option = false) {
     if (option) options--;
+    turn--;
     printf("%d\n", id);
     output_state();
 }
@@ -295,30 +302,6 @@ void handshake() {
 }
 
 void init() {
-    int num = 0;
-    queue<int> q;
-    
-    for (int mine : mines.get_mines()) {
-        for (int i = 0; i < graph.size(); i++) all_dist[num][i] = INF;
-        all_dist[num][mine] = 0;
-        q.push(mine);
-        
-        while (!q.empty()) {
-            int last = q.front();
-            q.pop();
-            
-            for (const Edge& edge : graph[last]) {
-                int next = edge.to;
-                if (all_dist[num][next] == INF) {
-                    all_dist[num][next] = all_dist[num][last] + 1;
-                    q.push(next);
-                }
-            }
-        }
-        
-        num++;
-    }
-    
     output(vector<pair<int, int>>());
 }
 
@@ -440,7 +423,7 @@ void connect(int v1, int v2) {
     
     for (int i = 0; i <= options; i++) {
         for (int j = 0; j < i; j++) {
-            if (dist1[v2][i] > dist1[v2][j] + j - i) dist1[v2][i] = INF;
+            if (dist1[v2][i] > turn || dist1[v2][i] > dist1[v2][j] + j - i) dist1[v2][i] = INF;
         }
         if (dist1[v2][i] < INF) sum = min(sum + sum1[v2][i], INF2);
     }
@@ -572,7 +555,7 @@ void connect() {
             if (visited[last][count]) continue;
             visited[last][count] = true;
             if (dist[last][count] == 0 && mines.is_mine(last)) used[mines.get_num(mine)] = true;
-            if (!uf[punter_id].same(last, mine) && uf[punter_id].get_mines(last).size() > 0) {
+            if (!uf[punter_id].same(last, mine) && uf[punter_id].get_mines(last).size() > 0 && dist[last][count] <= turn) {
                 double score = (double)uf[punter_id].get_size(last) * uf[punter_id].get_size(mine) / (dist[last][count] + count);
                 if (score > best) {
                     best = score;
