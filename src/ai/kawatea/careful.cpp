@@ -19,6 +19,15 @@ struct Edge {
     Edge(int to, int id, bool used, bool option) : to(to), id(id), used(used), option(option) {}
 };
 
+struct Edge2 {
+    int from;
+    int to;
+    bool option;
+    bool bridge = false;
+    
+    Edge2(int from, int to, bool option) : from(from), to(to), option(option) {}
+};
+
 class Mine {
     public:
     void init(int n) {
@@ -102,14 +111,50 @@ class UnionFind {
 
 int stage = 0;
 int options = 0;
-vector<pair<bool, pair<int, int>>> edges;
+vector<Edge2> edges;
 vector<vector<Edge>> graph;
 vector<vector<int>> degree;
 vector<UnionFind> uf;
 vector<vector<int>> all_dist;
 
+class Bridge {
+    public:
+    void bridge(int n) {
+        int count = 0;
+        
+        ord.resize(n);
+        low.resize(n);
+        for (int i = 0; i < n; i++) ord[i] = -1;
+        
+        for (int i = 0; i < n; i++) {
+            if (ord[i] == -1) dfs(i, -1, count);
+        }
+    }
+    
+    private:
+    vector<int> ord;
+    vector<int> low;
+    
+    void dfs(int now, int parent, int& count) {
+        ord[now] = low[now] = count++;
+        
+        for (const Edge& edge : graph[now]) {
+            int next = edge.to;
+            if (next == parent) continue;
+            if (ord[next] == -1) {
+                dfs(next, now, count);
+                low[now] = min(low[now], low[next]);
+                if (ord[now] < low[next]) edges[edge.id].bridge = true;
+            } else {
+                low[now] = min(low[now], ord[next]);
+            }
+        }
+    }
+} bridge;
+
 void input(bool read_state) {
     int n, m, mine, setting;
+    vector<pair<int, pair<int, int>>> option_edges;
     
     scanf("%d", &punter);
     scanf("%d", &punter_id);
@@ -133,9 +178,9 @@ void input(bool read_state) {
         int from, to, owner1, owner2;
         scanf("%d %d %d %d", &from, &to, &owner1, &owner2);
         if (owner1 != -1 && owner1 != punter_id && owner2 == -1) {
-            edges.push_back(make_pair(true, make_pair(from, to)));
+            edges.push_back(Edge2(from, to, true));
         } else {
-            edges.push_back(make_pair(false, make_pair(from, to)));
+            edges.push_back(Edge2(from, to, false));
         }
         
         if (owner1 == -1) {
@@ -150,8 +195,7 @@ void input(bool read_state) {
             graph[to].push_back(Edge(from, i, true, false));
             uf[punter_id].unite(from, to);
         } else if (owner2 == -1) {
-            graph[from].push_back(Edge(to, i, false, true));
-            graph[to].push_back(Edge(from, i, false, true));
+            option_edges.push_back(make_pair(i, make_pair(from, to)));
         }
         
         if (owner1 != punter_id && owner1 != -1) {
@@ -184,6 +228,18 @@ void input(bool read_state) {
                 all_dist[i][j] = d;
             }
         }
+    }
+    
+    if (options > 0) {
+        for (int i = 0; i < option_edges.size(); i++) {
+            int id = option_edges[i].first;
+            int from = option_edges[i].second.first;
+            int to = option_edges[i].second.second;
+            graph[from].push_back(Edge(to, id, false, true));
+            graph[to].push_back(Edge(from, id, false, true));            
+        }
+        
+        if (stage == 0) bridge.bridge(n);
     }
 }
 
@@ -244,7 +300,8 @@ void init() {
     output(vector<pair<int, int>>());
 }
 
-vector<int> calc_dist(int v1, int v2, int from, int to) {
+int calc_dist(int v1, int v2, int id) {
+    int base = INF, level = 0;
     vector<vector<bool>> visited(graph.size(), vector<bool>(options + 1));
     vector<vector<int>> dist(graph.size(), vector<int>(options + 1));
     deque<pair<int, int>> q;
@@ -264,9 +321,18 @@ vector<int> calc_dist(int v1, int v2, int from, int to) {
         if (visited[last][count]) continue;
         visited[last][count] = true;
         
+        if (last == v2) {
+            if (dist[v2][count] + count < base) {
+                base = dist[v2][count] + count;
+                level = count;
+            }
+        }
+        
+        if (dist[last][count] >= base) return base;
+        
         for (const Edge& edge : graph[last]) {
             int next = edge.to;
-            if ((last == from && next == to) || (last == to && next == from)) continue;
+            if (edge.id == id) continue;
             if (uf[punter_id].same(next, v2)) next = v2;
             if (edge.used) {
                 if (dist[next][count] > dist[last][count]) {
@@ -289,7 +355,7 @@ vector<int> calc_dist(int v1, int v2, int from, int to) {
         }
     }
     
-    return dist[v2];
+    return INF;
 }
 
 void connect(int v1, int v2) {
@@ -430,25 +496,26 @@ void connect(int v1, int v2) {
     }
     
     for (int i = 0; i < edges.size(); i++) {
-        int d = INF, from = edges[i].second.first, to = edges[i].second.second;
+        int d, from = edges[i].from, to = edges[i].to;
         long long status = root[i];
         if (root[i] == 0) continue;
         
-        if (root[i] == sum) {
-            vector<int> dists = calc_dist(v1, v2, from, to);
-            for (int i = 0; i <= options; i++) d = min(d, dists[i] + i - base);
+        if (edges[i].bridge) {
+            d = INF;
+        } else if (root[i] == sum) {
+            d = calc_dist(v1, v2, i);
         } else {
             d = 0;
         }
         
         if (uf[punter_id].same(from, v1) || uf[punter_id].same(from, v2) || uf[punter_id].same(to, v1) || uf[punter_id].same(to, v2)) status++;
-        if (!edges[i].first) status *= 2;
+        if (!edges[i].option) status *= 2;
         
         if (d > best || (d == best && status > best_status)) {
             best = d;
             best_status = status;
             id = i;
-            option = edges[i].first;
+            option = edges[i].option;
         }
     }
     
@@ -541,16 +608,21 @@ void surround() {
     for (int i = 0; i < order.size(); i++) {
         int mine = order[i].second;
         for (const Edge& edge : graph[mine]) {
-            int count = 0;
+            int count1 = punter, count2 = 0;
             if (edge.used || edge.option) continue;
             for (int j = 0; j < punter; j++) {
                 if (j == punter_id) continue;
                 if (uf[j].get_mines(mine).size() == 1) continue;
-                if (degree[j][mine] == 0 && degree[j][edge.to] > 0) output(edge.id);
-                if (degree[j][mine] == 0) count++;
+                if (degree[j][mine] == 0) {
+                    if (degree[j][edge.to] > 0) {
+                        count1++;
+                    } else {
+                        count2++;
+                    }
+                }
             }
-            if (count > best) {
-                best = count;
+            if ((count1 - punter > 0 && count1 > best) || count2 > best) {
+                best = max(count1, count2);
                 id = edge.id;
             }
         }
