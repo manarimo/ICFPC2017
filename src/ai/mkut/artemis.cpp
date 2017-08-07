@@ -17,7 +17,7 @@ bool checkTimeOut() {
     clock_t t = clock() - start;
     double tsec = ((double)t) / CLOCKS_PER_SEC;
     //cerr << tsec << endl;
-    if (tsec > 0.6) {
+    if (tsec > 0.8) {
         return true;
     }
     return false;
@@ -77,22 +77,22 @@ ostream &operator<<(ostream &os, const Game &g) {
 }
 
 struct State {
-    vector<vector<int> > dist;
+    // vector<vector<int> > dist;
     int numOption;
     int rTurn;
     vector<int> enemyRTurn;
 };
 
 void readState(State& s) {
-    int n; scanf("%d", &n);
-    s.dist.resize(n);
-    for (int i = 0; i < n; ++i) {
-        int m; scanf("%d", &m);
-        s.dist[i].resize(m);
-        for (int j = 0; j < m; ++j) {
-            scanf("%d", &s.dist[i][j]);
-        }
-    }
+//    int n; scanf("%d", &n);
+//    s.dist.resize(n);
+//    for (int i = 0; i < n; ++i) {
+//        int m; scanf("%d", &m);
+//        s.dist[i].resize(m);
+//        for (int j = 0; j < m; ++j) {
+//            scanf("%d", &s.dist[i][j]);
+//        }
+//    }
     scanf("%d", &s.numOption);
     scanf("%d", &s.rTurn);
     int punter; scanf("%d", &punter);
@@ -101,13 +101,13 @@ void readState(State& s) {
 }
 
 void writeState(State& s) {
-    printf("%lu", s.dist.size());
-    for (int i = 0; i < s.dist.size(); ++i) {
-        printf(" %lu", s.dist[i].size());
-        for (int j = 0; j < s.dist[i].size(); ++j) {
-            printf(" %d", s.dist[i][j]);
-        }
-    }
+//    printf("%lu", s.dist.size());
+//    for (int i = 0; i < s.dist.size(); ++i) {
+//        printf(" %lu", s.dist[i].size());
+//        for (int j = 0; j < s.dist[i].size(); ++j) {
+//            printf(" %d", s.dist[i][j]);
+//        }
+//    }
     printf(" %d %d", s.numOption, s.rTurn);
     printf(" %lu", s.enemyRTurn.size());
     for (int i = 0; i < s.enemyRTurn.size(); i++) {
@@ -172,42 +172,42 @@ double edgeProb(Game& game, Settings& settings, int numOption, int rTurn, bool o
 }
 
 State init(Game &game) {
-    vector<vector<Edge> > es(game.n);
-    for (int i = 0; i < game.m; i++) {
-        Edge &e = game.edge[i];
-        es[e.from].push_back(Edge{e.from, e.to, e.owner});
-        es[e.to].push_back(Edge{e.to, e.from, e.owner});
-    }
-
-    vector<vector<int> > dist(game.mines, vector<int>(game.n));
-    for (int i = 0; i < game.mines; i++) {
-        set<int> rests; for (int j = 0; j < game.n; j++) rests.insert(j);
-        queue<int> q; q.push(game.mine[i]); q.push(-1);
-        int d = 0;
-        while (q.size() > 1) {
-            int x = q.front(); q.pop();
-            if (x == -1) {
-                d++;
-                q.push(-1);
-                continue;
-            }
-            dist[i][x] = d;
-            for (int j = 0; j < es[x].size(); j++) {
-                int y = es[x][j].to;
-                if (rests.find(y) != rests.end()) {
-                    q.push(y);
-                    rests.erase(rests.find(y));
-                }
-            }
-        }
-    }
+//    vector<vector<Edge> > es(game.n);
+//    for (int i = 0; i < game.m; i++) {
+//        Edge &e = game.edge[i];
+//        es[e.from].push_back(Edge{e.from, e.to, e.owner});
+//        es[e.to].push_back(Edge{e.to, e.from, e.owner});
+//    }
+//
+//    vector<vector<int> > dist(game.mines, vector<int>(game.n));
+//    for (int i = 0; i < game.mines; i++) {
+//        vector<char> vis(game.n);
+//        queue<int> q; q.push(game.mine[i]); q.push(-1);
+//        int d = 0;
+//        while (q.size() > 1) {
+//            int x = q.front(); q.pop();
+//            if (x == -1) {
+//                d++;
+//                q.push(-1);
+//                continue;
+//            }
+//            dist[i][x] = d;
+//            for (int j = 0; j < es[x].size(); j++) {
+//                int y = es[x][j].to;
+//                if (!vis[y]) {
+//                    q.push(y);
+//                    vis[y] = 1;
+//                }
+//            }
+//        }
+//    }
     int expectedTurns = game.m / game.punter + (game.punter_id < game.m % game.punter ? 1 : 0);
     vector<int> enemyNumOption(game.punter, game.mines);
     vector<int> enemyRTurn(game.punter);
     for (int i = 0; i < game.punter; i++) {
         enemyRTurn[i] = game.m / game.punter + (i < game.m % game.punter ? 1 : 0);
     }
-    return State{dist, game.mines, expectedTurns, enemyRTurn};
+    return State{game.mines, expectedTurns, enemyRTurn};
 }
 
 struct UnionFind {
@@ -342,8 +342,39 @@ void edgeScore(vector<double>& score, Game &game, Settings& settings, vector<vec
 }
 
 Result move(Game &game, Settings& settings, State &state) {
+
+    vector<vector<Edge> > es(game.n);
+    for (int i = 0; i < game.m; i++) {
+        Edge &e = game.edge[i];
+        es[e.from].push_back(Edge{e.from, e.to, e.owner});
+        es[e.to].push_back(Edge{e.to, e.from, e.owner});
+    }
+
+    vector<vector<int> > dist(game.mines, vector<int>(game.n));
+    for (int i = 0; i < game.mines; i++) {
+        vector<char> vis(game.n);
+        queue<int> q; q.push(game.mine[i]); q.push(-1);
+        int d = 0;
+        while (q.size() > 1) {
+            int x = q.front(); q.pop();
+            if (x == -1) {
+                d++;
+                q.push(-1);
+                continue;
+            }
+            dist[i][x] = d;
+            for (int j = 0; j < es[x].size(); j++) {
+                int y = es[x][j].to;
+                if (!vis[y]) {
+                    q.push(y);
+                    vis[y] = 1;
+                }
+            }
+        }
+    }
+
     vector<double> score(game.m);
-    edgeScore(score, game, settings, state.dist, state.numOption, state.rTurn, false, game.punter_id);
+    edgeScore(score, game, settings, dist, state.numOption, state.rTurn, false, game.punter_id);
 
     vector<int> enemyNumOption(game.punter, game.mines);
     for (int i = 0; i < game.m; i++) {
@@ -357,7 +388,7 @@ Result move(Game &game, Settings& settings, State &state) {
             break;
         }
         if (i == game.punter_id) continue;
-        edgeScore(score, game, settings, state.dist, enemyNumOption[i], state.enemyRTurn[i], true, i);
+        edgeScore(score, game, settings, dist, enemyNumOption[i], state.enemyRTurn[i], true, i);
     }
 
     double maxScore = 0;
