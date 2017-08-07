@@ -759,6 +759,7 @@ void move() {
 }
 
 void greedy() {
+    output(-1);
     long long best = -1, id = -1;
     vector<int> used(mines.get_count());
     vector<int> dist(graph.size());
