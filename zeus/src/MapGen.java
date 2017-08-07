@@ -9,9 +9,9 @@ import java.util.Random;
 
 public class MapGen {
     public static void houki() throws IOException {
-        final int eLen = 10;
-        final int keNum = 10;
-        final int keLen = 2;
+        final int eLen = 100;
+        final int keNum = 50;
+        final int keLen = 3;
 
         final Map map = new Map();
         map.sites = new ArrayList<>();
@@ -21,7 +21,7 @@ public class MapGen {
         int id = 0;
         for (int i = 0; i < keNum; ++i) {
             for (int j = 0; j < keLen; ++j) {
-                map.sites.add(new Site(id, -10 + i * 5, (j - 5) * (keNum - i)));
+                map.sites.add(new Site(id, -10 + i * 5, (j - 5) * keNum));
                 if (j == 0) {
                     map.mines.add(id);
                 }
