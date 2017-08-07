@@ -1,3 +1,6 @@
 #!/usr/bin/env bash
 
-./bin/sandstar.rb ./build/artemis
+SCRIPT=$(readlink -f $0)
+SCRIPT_DIR=`dirname $SCRIPT`
+
+${SCRIPT_DIR}/bin/sandstar.rb prod

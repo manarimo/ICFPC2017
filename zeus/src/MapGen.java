@@ -103,14 +103,16 @@ public class MapGen {
     }
 
     public static void rand() throws IOException {
-        final int n = 40;
+        final int n = 12;
         final double pRiver = 0.7;
-        final double pMine = 0.5;
-        final Random random = new Random();
+        final double pMine = 0.85;
+        int mineLimit = 300;
+        final Random random = new Random(System.currentTimeMillis());
         final Map map = new Map();
         map.sites = new ArrayList<>();
         map.mines = new ArrayList<>();
         map.rivers = new ArrayList<>();
+        int x = 0;
         for (int j = 0; j < n; j++) {
             for (int i = 0; i < n; i++) {
                 map.sites.add(new Site(i + j * n, i, j));
@@ -123,8 +125,36 @@ public class MapGen {
                 if (i > 0 && j > 0 && random.nextDouble() < pRiver) {
                     map.rivers.add(new River(i + j * n, i - 1 + (j - 1) * n));
                 }
-                if (random.nextDouble() < pMine) {
+                if (random.nextDouble() < pMine && ++x < mineLimit) {
                     map.mines.add(i + j * n);
+                }
+            }
+        }
+        System.out.println(new ObjectMapper().writeValueAsString(map));
+    }
+
+    public static void donut() throws IOException {
+        final int n = 30;
+        final int m = 3;
+
+        final Random random = new Random();
+        final double pMine = 0.2;
+
+        final Map map = new Map();
+        map.sites = new ArrayList<>();
+        map.mines = new ArrayList<>();
+        map.rivers = new ArrayList<>();
+
+        for (int j = 0; j < m; ++j) {
+            for (int i = 0; i < n; ++i) {
+                double DO = 360.0 * i / n;
+                double x = Math.cos(Math.toRadians(DO)) * 100;
+                double y = Math.sin(Math.toRadians(DO)) * 100;
+                map.sites.add(new Site(j * n + i, x * (j + 1), y * (j + 1)));
+                if (j != m - 1) map.rivers.add(new River(j * n + i, (j + 1) * n + i));
+                map.rivers.add(new River(j * n + i, (j * n + (i + 1) % n)));
+                if (random.nextDouble() < pMine) {
+                    map.mines.add(j * n + i);
                 }
             }
         }

@@ -94,13 +94,13 @@ END
   end
 end
 
-class State < Struct.new(:my_id, :punters, :map, :settings, :app_state)
+class State < Struct.new(:my_id, :punters, :map, :settings, :app_state, :app_name)
   def self.from_json(json)
     settings = {}
     if json.key?('settings')
       settings = json['settings']
     end
-    self.new(json['punter'], json['punters'], Map.from_json(json['map']), settings, json['app_state'])
+    self.new(json['punter'], json['punters'], Map.from_json(json['map']), settings, json['app_state'], json['app_name'])
   end
 
   def to_kyopro
@@ -126,7 +126,8 @@ END
         punters: punters,
         map: map.to_hash,
         settings: settings,
-        app_state: app_state
+        app_state: app_state,
+        app_name: app_name
     }
   end
 end
@@ -270,26 +271,51 @@ def run(cmd, input)
   yield out, err
 end
 
+def determine_app(state)
+  if state.map.mines.size == 1
+    "#{__dir__}/../build/artemis"
+  elsif state.map.rivers.size * state.map.mines.size > 100000
+    "#{__dir__}/../build/kawatea_careful"
+  else
+    "#{__dir__}/../build/kawatea_careful"
+  end
+end
+
 reader = Reader.new(STDIN)
 
-run(ARGV[0], "HANDSHAKE\n") do |out, err|
-  my_name = out.chomp
+if ARGV[0] == 'prod'
   payload = {
-    me: my_name
+      me: 'Adlersprung'
   }
   print_json(STDOUT, payload)
   reader.read_json
-  # STDERR.puts err
+else
+  run(ARGV[0], "HANDSHAKE\n") do |out, err|
+    my_name = out.chomp
+    payload = {
+      me: my_name
+    }
+    print_json(STDOUT, payload)
+    reader.read_json
+    # STDERR.puts err
+  end
 end
+
 
 json = reader.read_json
 if json.key?('punter')
   obj = State.from_json(json)
+  if ARGV[0] == 'prod'
+    app = determine_app(obj)
+  else
+    app = ARGV[0]
+  end
+
   input = <<"END"
 INIT
 #{obj.to_kyopro}
 END
-  run(ARGV[0], input) do |out, err|
+  run(app, input) do |out, err|
     stdout = StringIO.new(out)
     num_futures = stdout.gets.to_i
     futures = []
@@ -298,12 +324,14 @@ END
       futures.push({source: source, target: target})
     end
     obj.app_state = stdout.read
+    obj.app_name = app
     payload = {
         ready: obj.my_id,
         futures: futures,
         state: obj.to_hash
     }
     print_json(STDOUT, payload)
+    #STDERR.puts payload
     # STDERR.puts err
   end
 elsif json.key?('move')
@@ -312,7 +340,12 @@ elsif json.key?('move')
 MOVE
 #{obj.to_kyopro}
 END
-  run(ARGV[0], input) do |out, err|
+  if ARGV[0] == 'prod'
+    app = determine_app(obj.state)
+  else
+    app = ARGV[0]
+  end
+  run(app, input) do |out, err|
     stdout = StringIO.new(out)
     edge_id = stdout.gets.to_i
     case edge_id
