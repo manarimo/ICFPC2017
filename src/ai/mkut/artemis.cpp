@@ -140,12 +140,12 @@ istream &operator>>(istream &is, Settings &settings) {
     return is;
 }
 
-bool canClaim(Edge& e, Settings& settings, State& state, int punterId) {
+bool canClaim(Edge& e, Settings& settings, int numOption, int punterId) {
     if (e.owner == -1) return true;
     if (!settings.options) return false;
     if (e.option != -1) return false;
     if (e.owner == punterId) return false;
-    if (state.numOption <= 0) return false;
+    if (numOption <= 0) return false;
     return true;
 }
 
@@ -225,7 +225,7 @@ struct UnionFind {
     }
 };
 
-double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPathScore, map<pair<int, int>, double>& pathNum, map<int, int>& dist, vector<double>& dist2, vector<vector<int> >& es, Game& game, Settings& settings, State& state, UnionFind& uf, pair<int, int> xdame) {
+double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPathScore, map<pair<int, int>, double>& pathNum, map<int, int>& dist, vector<double>& dist2, vector<vector<int> >& es, Game& game, Settings& settings, int numOption, int rTurn, bool enemy, UnionFind& uf, pair<int, int> xdame) {
     int x = xdame.first;
     int dame = xdame.second;
     if (minPathScore.find(xdame) != minPathScore.end()) {
@@ -234,7 +234,7 @@ double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPa
     if (debug) ofs << "IN" << x << "(" << dame << ")" << endl;
     double ret = 0;
     ret += dist2[x];
-    if (dist[x] + dame < state.rTurn) {
+    if (dist[x] + dame < rTurn) {
         for (int i = 0; i < es[x].size(); i++) {
             Edge& e = game.edge[es[x][i]];
             int to = uf.find(e.from) == x ? e.to : e.from;
@@ -248,9 +248,18 @@ double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPa
             } else {
                 continue;
             }
-            double nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, settings, state, uf, next) * pathNum[xdame] * edgeProb(game, settings, state.numOption, state.rTurn, e.owner == -1) / pathNum[next];
-            ret += nscore * edgeProb(game, settings, state.numOption, state.rTurn, e.owner == -1);
-            score[es[x][i]] += nscore * pathNum[xdame];
+            double ep = edgeProb(game, settings, numOption, rTurn, e.owner == -1);
+            double nscore = getMinPathScore(score, minPathScore, pathNum, dist, dist2, es, game, settings, numOption, rTurn, enemy, uf, next) * pathNum[xdame] * ep / pathNum[next];
+            ret += nscore * ep;
+            double probEffect;
+            if (!enemy) {
+                probEffect = 1 - ep;
+            } else if (e.owner == -1) {
+                probEffect = ep - occupiedProb(game, settings, numOption, rTurn);
+            } else {
+                probEffect = ep;
+            }
+            score[es[x][i]] += nscore * pathNum[xdame] * probEffect;
             if (debug) ofs << "edge" << es[x][i] << "/" << score[es[x][i]] << endl;
         }
     }
@@ -258,7 +267,7 @@ double getMinPathScore(vector<double>& score, map<pair<int, int>, double>& minPa
     return minPathScore[xdame] = ret;
 }
 
-vector<double> edgeScore(Game &game, Settings& settings, State &state, int punterId) {
+vector<double> edgeScore(Game &game, Settings& settings, vector<vector<int> >& stateDist, int numOption, int rTurn, bool enemy, int punterId) {
     UnionFind uf(game.n);
     for (int i = 0; i < game.m; i++) {
         if (game.edge[i].owner == punterId || game.edge[i].option == punterId) {
@@ -281,7 +290,7 @@ vector<double> edgeScore(Game &game, Settings& settings, State &state, int punte
         if (from == to) {
             continue;
         }
-        if (canClaim(e, settings, state, punterId)) {
+        if (canClaim(e, settings, numOption, punterId)) {
             es[from].push_back(i);
             es[to].push_back(i);
         }
@@ -304,7 +313,7 @@ vector<double> edgeScore(Game &game, Settings& settings, State &state, int punte
             double score = 0;
             for (int j = 0; j < it->second.size(); j++) {
                 int y = it->second[j];
-                score += state.dist[i][y] * state.dist[i][y];
+                score += stateDist[i][y] * stateDist[i][y];
             }
             dist2[i][x] = score;
         }
@@ -341,12 +350,12 @@ vector<double> edgeScore(Game &game, Settings& settings, State &state, int punte
                     if (debug) ofs << " " << to << endl;
                     if (dist.find(to) == dist.end() || dist[to] == dist[x] + 1) {
                         pair<int, int> next = make_pair(to, dame);
-                        pathNum[next] += pathNum[*it] * edgeProb(game, settings, state.numOption, state.rTurn, e.owner == -1);
+                        pathNum[next] += pathNum[*it] * edgeProb(game, settings, numOption, rTurn, e.owner == -1);
                         nq.insert(next);
                         dist[to] = dist[x] + 1;
                     } else if (dist[to] == dist[x] && dame == 0) {
                         pair<int, int> next = make_pair(to, 1);
-                        pathNum[next] += pathNum[*it] * edgeProb(game, settings, state.numOption, state.rTurn, e.owner == -1);
+                        pathNum[next] += pathNum[*it] * edgeProb(game, settings, numOption, rTurn, e.owner == -1);
                         nq.insert(next);
                     }
                 }
@@ -368,31 +377,28 @@ vector<double> edgeScore(Game &game, Settings& settings, State &state, int punte
         }
 
         map<pair<int, int>, double> minPathScore;
-        getMinPathScore(score, minPathScore, pathNum, dist, dist2[i], es, game, settings, state, uf, start);
+        getMinPathScore(score, minPathScore, pathNum, dist, dist2[i], es, game, settings, numOption, rTurn, enemy, uf, start);
     }
     return score;
 }
 
 Result move(Game &game, Settings& settings, State &state) {
-    vector<double> score = edgeScore(game, settings, state, game.punter_id);
+    vector<double> score = edgeScore(game, settings, state.dist, state.numOption, state.rTurn, false, game.punter_id);
 
     if (debug) ofs << "SCORE (me)" << endl;
     for (int i = 0; i < game.m; i++) {
-        if (canClaim(game.edge[i], settings, state, game.punter_id)) {
+        if (canClaim(game.edge[i], settings, state.numOption, game.punter_id)) {
             if (debug) ofs << i << ":" << score[i] << endl;
         }
     }
 
-    for (int i = 0; i < game.m; i++) {
-        score[i] *= (1 - edgeProb(game, settings, state.numOption, state.rTurn, game.edge[i].owner == -1));
-    }
     for (int i = 0; i < game.punter; i++) {
         if (i == game.punter_id) continue;
-        vector<double> enemyScore = edgeScore(game, settings, state, i);
+        vector<double> enemyScore = edgeScore(game, settings, state.dist, state.enemyNumOption[i], state.enemyRTurn[i], true, i);
 
         if (debug) ofs << "SCORE (" << i << ")" << endl;
         for (int j = 0; j < game.m; j++) {
-            if (canClaim(game.edge[i], settings, state, i)) {
+            if (canClaim(game.edge[i], settings, state.enemyNumOption[i], i)) {
                 if (debug) ofs << j << ":" << enemyScore[j] << endl;
             }
         }
@@ -413,7 +419,7 @@ Result move(Game &game, Settings& settings, State &state) {
 
     if (debug) ofs << "SCORE" << endl;
     for (int i = 0; i < game.m; i++) {
-        if (canClaim(game.edge[i], settings, state, game.punter_id)) {
+        if (canClaim(game.edge[i], settings, state.numOption, game.punter_id)) {
             if (debug) ofs << i << ":" << score[i] << endl;
             if (maxScore < score[i]) {
                 maxScore = score[i];
