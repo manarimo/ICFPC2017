@@ -395,9 +395,11 @@ Result move(Game &game, Settings& settings, State &state) {
     int maxIdx = -1;
 
     for (int i = 0; i < game.m; i++) {
-        if (maxScore < score[i]) {
-            maxScore = score[i];
-            maxIdx = i;
+        if (canClaim(game.edge[i], settings, enemyNumOption[game.punter_id], game.punter_id)) {
+            if (maxScore < score[i]) {
+                maxScore = score[i];
+                maxIdx = i;
+            }
         }
     }
 
