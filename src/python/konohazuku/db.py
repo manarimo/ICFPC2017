@@ -11,7 +11,7 @@ def fetch_all_logs():
         cursor = conn.cursor(DictCursor)
         while True:
             offset = 0
-            items = cursor.execute("SELECT * FROM match_log LIMIT 1000 OFFSET ?", (offset,))
+            items = cursor.execute("SELECT * FROM match_log LIMIT 1000 OFFSET %s", (offset,))
             if items == 0:
                 break
             offset += items
